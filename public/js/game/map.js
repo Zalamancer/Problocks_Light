@@ -210,6 +210,7 @@ export class TileMap {
     this.container = new PIXI.Container();
     this.wang = new WangTileManager(this.tileSize);
     this.objectTextures = {};
+    this.app = null; // set before loadAssets for ground baking
   }
 
   async loadAssets() {
@@ -235,46 +236,53 @@ export class TileMap {
     const { ground, objects } = this.data.layers;
     const ts = this.tileSize;
     const h = ground.length, w = ground[0].length;
-
-    // Build vertex terrain grid for Wang tile lookups
     const verts = buildVertexGrid(ground);
 
-    // Ground layer — Wang tilesets only (no procedural fallback)
+    // Ground layer — render to temporary container, then bake to texture
+    const groundContainer = new PIXI.Container();
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const tex = getWangTexture(
-          this.wang,
-          verts[y][x],
-          verts[y][x+1],
-          verts[y+1][x],
-          verts[y+1][x+1]
+          this.wang, verts[y][x], verts[y][x+1], verts[y+1][x], verts[y+1][x+1]
         );
         if (!tex) continue;
-
         const sprite = new PIXI.Sprite(tex);
         sprite.x = x * ts;
         sprite.y = y * ts;
-        this.container.addChild(sprite);
+        groundContainer.addChild(sprite);
       }
     }
 
-    // Object layer — PixelLab assets only (no procedural fallback)
+    // Bake ground to single texture if renderer available
+    if (this.app) {
+      const renderTex = PIXI.RenderTexture.create({ width: w * ts, height: h * ts });
+      this.app.renderer.render({ container: groundContainer, target: renderTex });
+      const bakedGround = new PIXI.Sprite(renderTex);
+      this.container.addChild(bakedGround);
+      groundContainer.destroy({ children: true });
+    } else {
+      // Fallback: add sprites directly (for environments without renderer)
+      this.container.addChild(groundContainer);
+    }
+
+    // Object layer — individual sprites with culling
+    const objContainer = new PIXI.Container();
+    objContainer.cullable = true;
     for (let y = 0; y < objects.length; y++) {
       for (let x = 0; x < objects[y].length; x++) {
         const objId = objects[y][x];
         if (objId === 0) continue;
-
         const cfg = PIXELLAB_OBJECTS[objId];
         const tex = this.objectTextures[String(objId)];
         if (!cfg || !tex) continue;
-
         const sprite = new PIXI.Sprite(tex);
         sprite.scale.set(cfg.scale);
         sprite.x = x * ts + cfg.ox;
         sprite.y = y * ts + cfg.oy;
-        this.container.addChild(sprite);
+        objContainer.addChild(sprite);
       }
     }
+    this.container.addChild(objContainer);
   }
 
   isWalkable(tileX, tileY) {
