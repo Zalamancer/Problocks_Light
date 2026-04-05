@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tile Viewer - Problocks Light</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #1a1a2e; color: #eee; font-family: monospace; padding: 24px; }
+    h1 { font-size: 20px; margin-bottom: 24px; color: #f0d060; }
+    h2 { font-size: 16px; margin: 24px 0 12px; color: #7ec8e3; border-bottom: 1px solid #333; padding-bottom: 6px; }
+    .grid { display: flex; flex-wrap: wrap; gap: 16px; }
+    .tile-card {
+      background: #252540;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 12px;
+      text-align: center;
+      min-width: 100px;
+    }
+    .tile-card img {
+      image-rendering: pixelated;
+      display: block;
+      margin: 0 auto 8px;
+    }
+    .tile-card .label { font-size: 11px; color: #aaa; word-break: break-all; }
+    .tile-card .size { font-size: 10px; color: #666; margin-top: 4px; }
+    .tileset-card {
+      background: #252540;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 16px;
+      min-width: 200px;
+    }
+    .tileset-card img {
+      image-rendering: pixelated;
+      display: block;
+      margin: 0 auto 8px;
+    }
+    .tileset-card .label { font-size: 12px; color: #ccc; margin-bottom: 4px; }
+    .tileset-card .sub { font-size: 10px; color: #888; }
+    .tileset-tiles { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+    .tileset-tiles canvas { image-rendering: pixelated; border: 1px solid #444; }
+    .checkerboard {
+      background-image:
+        linear-gradient(45deg, #333 25%, transparent 25%),
+        linear-gradient(-45deg, #333 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #333 75%),
+        linear-gradient(-45deg, transparent 75%, #333 75%);
+      background-size: 8px 8px;
+      background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+      display: inline-block;
+      padding: 4px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Problocks Light - Asset Viewer</h1>
+  <div id="content"></div>
+
+  <script>
+    const content = document.getElementById('content');
+
+    // Fixed Wang tile layout — same order for every PixelLab tileset
+    // (Q1=NE, Q2=NW, Q3=SW, Q4=SE)
+    const WANG_TILES = [
+      { idx: 0,  q: 'u,u,l,u', name: 'Outer corner SW' },
+      { idx: 1,  q: 'l,u,u,l', name: 'Diagonal NE-SW' },
+      { idx: 2,  q: 'u,l,l,l', name: 'Inner corner NE' },
+      { idx: 3,  q: 'u,u,l,l', name: 'Edge S' },
+      { idx: 4,  q: 'u,l,u,l', name: 'Edge W' },
+      { idx: 5,  q: 'l,u,l,l', name: 'Inner corner NW' },
+      { idx: 6,  q: 'l,l,l,l', name: 'Pure lower' },
+      { idx: 7,  q: 'l,l,l,u', name: 'Inner corner SE' },
+      { idx: 8,  q: 'l,u,u,u', name: 'Outer corner NE' },
+      { idx: 9,  q: 'l,l,u,u', name: 'Edge N' },
+      { idx: 10, q: 'l,l,u,l', name: 'Inner corner SW' },
+      { idx: 11, q: 'u,l,l,u', name: 'Diagonal NW-SE' },
+      { idx: 12, q: 'u,u,u,u', name: 'Pure upper' },
+      { idx: 13, q: 'u,u,u,l', name: 'Outer corner SE' },
+      { idx: 14, q: 'l,u,l,u', name: 'Edge E' },
+      { idx: 15, q: 'u,l,u,u', name: 'Outer corner NW' },
+    ];
+
+    const tilesets = [
+      { file: 'water-sand', label: 'Water → Sand', lower: 'Water', upper: 'Sand' },
+      { file: 'sand-grass', label: 'Sand → Grass', lower: 'Sand', upper: 'Grass' },
+      { file: 'grass-dirt', label: 'Grass → Dirt', lower: 'Grass', upper: 'Dirt' },
+      { file: 'grass-cobblestone', label: 'Grass → Cobblestone', lower: 'Grass', upper: 'Cobblestone' },
+    ];
+
+    const tiles = [
+      'crate.png', 'mushroom.png', 'pumpkin.png',
+      'stepping-stone.png', 'tall-grass.png',
+    ];
+
+    const objects = [
+      'oak-tree.png', 'pine-tree.png', 'bush.png', 'rock.png', 'fence.png',
+      'shop-a.png', 'shop-b.png', 'shop-c.png',
+      'farmhouse-a.png', 'farmhouse-b.png',
+      'barn-a.png', 'barn-b.png',
+      'cave-a.png', 'cave-b.png',
+      'dock-a.png', 'dock-b.png',
+      'bridge-h.png', 'bridge-v.png',
+      'flowers.png', 'sign.png', 'lamp.png', 'bench.png',
+      'barrel.png', 'well.png', 'mushroom.png',
+    ];
+
+    // --- Tilesets (Wang) ---
+    const tsSection = document.createElement('div');
+    tsSection.innerHTML = '<h2>Tilesets (Wang Terrain Transitions) — Fixed 4x4 Layout</h2>';
+    const tsGrid = document.createElement('div');
+    tsGrid.className = 'grid';
+
+    for (const ts of tilesets) {
+      const card = document.createElement('div');
+      card.className = 'tileset-card';
+
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = ts.label;
+      card.appendChild(label);
+
+      const sub = document.createElement('div');
+      sub.className = 'sub';
+      sub.textContent = `16 tiles, 16x16px | Lower: ${ts.lower} | Upper: ${ts.upper}`;
+      card.appendChild(sub);
+
+      // Full spritesheet (scaled up)
+      const img = document.createElement('img');
+      img.src = `/assets/tilesets/${ts.file}.png`;
+      img.width = 256;
+      img.height = 256;
+      img.title = ts.file;
+      card.appendChild(img);
+
+      // Extract individual tiles using fixed grid positions
+      const tilesDiv = document.createElement('div');
+      tilesDiv.className = 'tileset-tiles';
+      card.appendChild(tilesDiv);
+
+      const sheetImg = new Image();
+      sheetImg.crossOrigin = 'anonymous';
+      sheetImg.onload = () => {
+        for (const wt of WANG_TILES) {
+          const col = wt.idx % 4;
+          const row = Math.floor(wt.idx / 4);
+          const tileLabel = wt.name
+            .replace('lower', ts.lower)
+            .replace('upper', ts.upper);
+
+          const c = document.createElement('canvas');
+          c.width = 16; c.height = 16;
+          c.style.width = '64px'; c.style.height = '64px';
+          c.title = `#${wt.idx} ${tileLabel} (${wt.q})`;
+          const ctx = c.getContext('2d');
+          ctx.drawImage(sheetImg, col * 16, row * 16, 16, 16, 0, 0, 16, 16);
+          tilesDiv.appendChild(c);
+        }
+      };
+      sheetImg.src = `/assets/tilesets/${ts.file}.png`;
+
+      tsGrid.appendChild(card);
+    }
+    tsSection.appendChild(tsGrid);
+    content.appendChild(tsSection);
+
+    // --- Individual Tiles ---
+    const tileSection = document.createElement('div');
+    tileSection.innerHTML = '<h2>Individual Tiles</h2>';
+    const tileGrid = document.createElement('div');
+    tileGrid.className = 'grid';
+
+    for (const file of tiles) {
+      const card = document.createElement('div');
+      card.className = 'tile-card';
+      const cb = document.createElement('div');
+      cb.className = 'checkerboard';
+      const img = document.createElement('img');
+      img.src = `/assets/tiles/${file}`;
+      img.style.width = '64px';
+      img.style.height = '64px';
+      img.title = file;
+      img.onload = () => {
+        const sz = document.createElement('div');
+        sz.className = 'size';
+        sz.textContent = `${img.naturalWidth}x${img.naturalHeight}px`;
+        card.appendChild(sz);
+      };
+      cb.appendChild(img);
+      card.appendChild(cb);
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = file.replace('.png', '');
+      card.appendChild(label);
+      tileGrid.appendChild(card);
+    }
+    tileSection.appendChild(tileGrid);
+    content.appendChild(tileSection);
+
+    // --- Objects ---
+    const objSection = document.createElement('div');
+    objSection.innerHTML = '<h2>Objects</h2>';
+    const objGrid = document.createElement('div');
+    objGrid.className = 'grid';
+
+    for (const file of objects) {
+      const card = document.createElement('div');
+      card.className = 'tile-card';
+      const cb = document.createElement('div');
+      cb.className = 'checkerboard';
+      const img = document.createElement('img');
+      img.src = `/assets/objects/${file}`;
+      img.style.maxWidth = '128px';
+      img.style.maxHeight = '128px';
+      img.title = file;
+      img.onload = () => {
+        const sz = document.createElement('div');
+        sz.className = 'size';
+        sz.textContent = `${img.naturalWidth}x${img.naturalHeight}px`;
+        card.appendChild(sz);
+      };
+      cb.appendChild(img);
+      card.appendChild(cb);
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = file.replace('.png', '');
+      card.appendChild(label);
+      objGrid.appendChild(card);
+    }
+    objSection.appendChild(objGrid);
+    content.appendChild(objSection);
+  </script>
+</body>
+</html>
