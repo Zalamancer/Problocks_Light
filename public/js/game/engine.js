@@ -5,6 +5,7 @@ import { NPCManager } from './npc.js';
 import { DialogueBox } from './dialogue.js';
 import { HUD } from './hud.js';
 import { ShopUI } from './shop-ui.js';
+import { generateWorld } from './world-gen.js';
 
 class Game {
   constructor() {
@@ -37,7 +38,9 @@ class Game {
     this.app.canvas.style.imageRendering = 'pixelated';
 
     this.zoom = 3; // Stardew-style pixel zoom
-    const mapData = await fetch('/assets/maps/village-main.json').then(r => r.json());
+    // TODO: read seed from classroom config once schema supports it
+    const seed = 42;
+    const mapData = generateWorld(seed, 120, 90);
 
     // World container — everything inside gets zoomed
     this.world = new PIXI.Container();
@@ -45,6 +48,7 @@ class Game {
     this.app.stage.addChild(this.world);
 
     this.map = new TileMap(mapData);
+    this.map.app = this.app;
     await this.map.loadAssets();
     this.world.addChild(this.map.container);
 

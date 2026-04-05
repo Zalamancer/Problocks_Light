@@ -37,6 +37,7 @@
     import { TileMap } from '/js/game/map.js';
     import { Player } from '/js/game/player.js';
     import { NPCManager } from '/js/game/npc.js';
+    import { generateWorld } from '/js/game/world-gen.js';
 
     async function init() {
       const app = new PIXI.Application();
@@ -49,7 +50,7 @@
       app.canvas.style.imageRendering = 'pixelated';
 
       const ZOOM = 3; // Stardew-style pixel zoom
-      const mapData = await fetch('/assets/maps/village-main.json').then(r => r.json());
+      const mapData = generateWorld(42, 120, 90);
 
       // World container holds everything and gets scaled
       const world = new PIXI.Container();
@@ -57,6 +58,7 @@
       app.stage.addChild(world);
 
       const map = new TileMap(mapData);
+      map.app = app;
       await map.loadAssets();
       world.addChild(map.container);
 
