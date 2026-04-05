@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teacher Dashboard — Problocks Light</title>
+  <link rel="stylesheet" href="/css/teacher.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <nav>
+    <h1>Problocks Light — Teacher Dashboard</h1>
+    <button id="logout-btn">Logout</button>
+  </nav>
+
+  <div class="dashboard">
+    <section id="classes-section">
+      <h2>Your Classes</h2>
+      <button id="create-class-btn">+ Create Class</button>
+      <div id="classes-list"></div>
+    </section>
+
+    <section id="class-detail" style="display:none">
+      <button id="back-btn" style="background:transparent;border:1px solid #0f3460;color:#eee;padding:0.4rem 1rem;cursor:pointer;margin-bottom:1rem;font-family:inherit">&larr; Back</button>
+      <h2 id="class-name"></h2>
+      <p>Join Code: <strong id="class-code" style="color:#ffd700;font-size:1.2rem"></strong></p>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="roster">Roster</button>
+        <button class="tab" data-tab="leaderboard">Leaderboard</button>
+        <button class="tab" data-tab="analytics">Analytics</button>
+      </div>
+
+      <div id="roster-tab" class="tab-content">
+        <table id="roster-table">
+          <thead><tr><th>Name</th><th>Level</th><th>XP</th><th>Coins</th><th>Questions</th><th>Accuracy</th><th>Actions</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <button id="export-btn">Export CSV</button>
+      </div>
+
+      <div id="leaderboard-tab" class="tab-content" style="display:none">
+        <canvas id="leaderboard-chart"></canvas>
+      </div>
+
+      <div id="analytics-tab" class="tab-content" style="display:none">
+        <canvas id="mastery-chart"></canvas>
+      </div>
+    </section>
+  </div>
+
+  <div id="modal" style="display:none">
+    <div class="modal-content">
+      <h3 id="modal-title"></h3>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <script type="module" src="/js/teacher/dashboard.js"></script>
+</body>
+</html>

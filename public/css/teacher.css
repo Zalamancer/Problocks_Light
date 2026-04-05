@@ -1,0 +1,34 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #1a1a2e; color: #eee; font-family: 'Courier New', monospace; }
+nav {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 2rem; background: #16213e; border-bottom: 2px solid #0f3460;
+}
+nav h1 { font-size: 1.2rem; color: #e94560; }
+#logout-btn { background: transparent; border: 1px solid #e94560; color: #e94560; padding: 0.4rem 1rem; cursor: pointer; font-family: inherit; }
+.dashboard { padding: 2rem; max-width: 900px; margin: 0 auto; }
+h2 { margin-bottom: 1rem; }
+#create-class-btn {
+  padding: 0.5rem 1rem; background: #e94560; color: white;
+  border: none; cursor: pointer; margin-bottom: 1rem; font-family: inherit;
+}
+.class-card {
+  background: #16213e; border: 1px solid #0f3460; padding: 1rem;
+  margin-bottom: 0.5rem; cursor: pointer; border-radius: 4px;
+}
+.class-card:hover { border-color: #e94560; }
+.tabs { display: flex; gap: 0.5rem; margin: 1rem 0; }
+.tab { padding: 0.5rem 1rem; background: transparent; border: 1px solid #0f3460; color: #eee; cursor: pointer; font-family: inherit; }
+.tab.active { background: #0f3460; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+th, td { padding: 0.5rem; text-align: left; border-bottom: 1px solid #0f3460; }
+th { color: #e94560; }
+#export-btn { padding: 0.4rem 1rem; background: #0f3460; color: #eee; border: none; cursor: pointer; font-family: inherit; }
+canvas { max-height: 300px; }
+#modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 50; }
+.modal-content { background: #16213e; border: 2px solid #0f3460; padding: 2rem; border-radius: 8px; min-width: 300px; }
+.modal-content input { width: 100%; padding: 0.5rem; margin: 0.5rem 0; background: #1a1a2e; border: 1px solid #0f3460; color: #eee; font-family: inherit; }
+.modal-content button { padding: 0.5rem 1rem; margin-right: 0.5rem; border: none; cursor: pointer; font-family: inherit; }
+.modal-content .primary { background: #e94560; color: white; }
+.modal-content .secondary { background: transparent; border: 1px solid #0f3460; color: #eee; }
+.reset-pin-btn { background: #0f3460; color: #eee; border: none; padding: 0.2rem 0.5rem; cursor: pointer; font-family: inherit; font-size: 0.8rem; }

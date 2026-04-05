@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Problocks Light - Visual Test</title>
+  <link rel="stylesheet" href="/css/game.css">
+  <script src="https://pixijs.download/release/pixi.min.js"></script>
+</head>
+<body>
+  <div id="game-container"></div>
+  <div id="hud">
+    <span><span class="hud-icon">&#x1FA99;</span> <span id="hud-coins">150</span></span>
+    <span><span class="hud-icon">&#x2B50;</span> <span id="hud-xp">420 XP</span></span>
+    <span><span class="hud-icon">&#x2694;</span> <span id="hud-level">Lv. 3</span></span>
+  </div>
+  <div id="hud-hint">WASD move &bull; E interact</div>
+  <div id="dialogue-box" style="display:none">
+    <div id="dialogue-header">
+      <div id="dialogue-npc-avatar"></div>
+      <span id="dialogue-npc-name"></span>
+    </div>
+    <div id="dialogue-body">
+      <p id="dialogue-question"></p>
+      <div id="dialogue-choices"></div>
+      <div id="dialogue-feedback" style="display:none"></div>
+    </div>
+  </div>
+  <div id="shop-overlay" style="display:none">
+    <div id="shop-panel">
+      <div id="shop-header"><h2>SHOP</h2><span id="shop-coins">0</span></div>
+      <div id="shop-items"></div>
+      <button id="shop-close">ESC to close</button>
+    </div>
+  </div>
+  <script type="module">
+    import { TileMap } from '/js/game/map.js';
+    import { Player } from '/js/game/player.js';
+    import { NPCManager } from '/js/game/npc.js';
+
+    async function init() {
+      const app = new PIXI.Application();
+      await app.init({
+        resizeTo: document.getElementById('game-container'),
+        backgroundColor: 0x87CEEB,
+        antialias: false,
+      });
+      document.getElementById('game-container').appendChild(app.canvas);
+      app.canvas.style.imageRendering = 'pixelated';
+
+      const ZOOM = 3; // Stardew-style pixel zoom
+      const mapData = await fetch('/assets/maps/village-main.json').then(r => r.json());
+
+      // World container holds everything and gets scaled
+      const world = new PIXI.Container();
+      world.scale.set(ZOOM);
+      app.stage.addChild(world);
+
+      const map = new TileMap(mapData);
+      await map.loadAssets();
+      world.addChild(map.container);
+
+      const npcs = new NPCManager(mapData.npcs, mapData.tileSize);
+      await npcs.loadAssets();
+      map.container.addChild(npcs.container);
+
+      const player = new Player(mapData.playerStart, mapData.tileSize);
+      await player.loadAssets();
+      map.container.addChild(player.sprite);
+
+      let gameTime = 0;
+      const keys = {};
+      window.addEventListener('keydown', (e) => {
+        keys[e.key.toLowerCase()] = true;
+        if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase())) e.preventDefault();
+      });
+      window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+
+      app.ticker.add((ticker) => {
+        const dt = ticker.deltaMS / 1000;
+        gameTime += ticker.deltaMS;
+        npcs.animate(gameTime);
+
+        let dx = 0, dy = 0;
+        if (keys['arrowup'] || keys['w']) dy = -1;
+        if (keys['arrowdown'] || keys['s']) dy = 1;
+        if (keys['arrowleft'] || keys['a']) dx = -1;
+        if (keys['arrowright'] || keys['d']) dx = 1;
+
+        player.update(dx, dy, dt, map);
+
+        // Smooth camera follow (account for zoom)
+        const screenW = app.screen.width;
+        const screenH = app.screen.height;
+        const ts = player.tileSize;
+        let camX = screenW / 2 / ZOOM - player.sprite.x - ts / 2;
+        let camY = screenH / 2 / ZOOM - player.sprite.y - ts / 2;
+        const mapW = mapData.width * ts;
+        const mapH = mapData.height * ts;
+        camX = Math.min(0, Math.max(screenW / ZOOM - mapW, camX));
+        camY = Math.min(0, Math.max(screenH / ZOOM - mapH, camY));
+        map.container.x = Math.round(camX);
+        map.container.y = Math.round(camY);
+      });
+    }
+
+    init().catch(console.error);
+  </script>
+</body>
+</html>

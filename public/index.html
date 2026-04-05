@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Problocks Light</title>
+  <link rel="stylesheet" href="/css/game.css">
+  <script src="https://pixijs.download/release/pixi.min.js"></script>
+</head>
+<body>
+  <div id="game-container"></div>
+  <div id="hud">
+    <span><span class="hud-icon">&#x1FA99;</span> <span id="hud-coins">0</span></span>
+    <span><span class="hud-icon">&#x2B50;</span> <span id="hud-xp">0 XP</span></span>
+    <span><span class="hud-icon">&#x2694;</span> <span id="hud-level">Lv. 1</span></span>
+  </div>
+  <div id="hud-hint">WASD move &bull; E interact &bull; B shop</div>
+  <div id="dialogue-box" style="display:none">
+    <div id="dialogue-header">
+      <div id="dialogue-npc-avatar"></div>
+      <span id="dialogue-npc-name"></span>
+    </div>
+    <div id="dialogue-body">
+      <p id="dialogue-question"></p>
+      <div id="dialogue-choices"></div>
+      <div id="dialogue-feedback" style="display:none"></div>
+    </div>
+  </div>
+  <div id="shop-overlay" style="display:none">
+    <div id="shop-panel">
+      <div id="shop-header">
+        <h2>SHOP</h2>
+        <span id="shop-coins">0</span>
+      </div>
+      <div id="shop-items"></div>
+      <button id="shop-close">ESC to close</button>
+    </div>
+  </div>
+  <script type="module" src="/js/game/engine.js"></script>
+</body>
+</html>

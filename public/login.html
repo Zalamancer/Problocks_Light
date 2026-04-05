@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Problocks Light</title>
+  <link rel="stylesheet" href="/css/login.css">
+</head>
+<body>
+  <div class="login-container">
+    <div class="game-title">
+      <h1>PROBLOCKS</h1>
+      <div class="subtitle">LEARN &bull; PLAY &bull; CONQUER</div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="student">STUDENT</button>
+      <button class="tab" data-tab="teacher">TEACHER</button>
+    </div>
+
+    <form id="student-join-form" class="form">
+      <h2>JOIN A CLASS</h2>
+      <input type="text" name="joinCode" placeholder="CLASS CODE" required maxlength="6" autocomplete="off">
+      <input type="text" name="username" placeholder="PICK A USERNAME" required maxlength="20" autocomplete="off">
+      <input type="text" name="displayName" placeholder="YOUR NAME" required maxlength="30" autocomplete="off">
+      <input type="password" name="pin" placeholder="4-DIGIT PIN" required maxlength="4" pattern="[0-9]{4}" autocomplete="off">
+      <button type="submit">START ADVENTURE</button>
+      <p class="switch-link">Already playing? <a href="#" id="show-login">Log in</a></p>
+    </form>
+
+    <form id="student-login-form" class="form" style="display:none">
+      <h2>WELCOME BACK</h2>
+      <input type="text" name="username" placeholder="USERNAME" required autocomplete="off">
+      <input type="password" name="pin" placeholder="PIN" required maxlength="4" autocomplete="off">
+      <input type="hidden" name="schoolId" value="1">
+      <button type="submit">CONTINUE</button>
+      <p class="switch-link">New here? <a href="#" id="show-join">Join a class</a></p>
+    </form>
+
+    <form id="teacher-form" class="form" style="display:none">
+      <h2>TEACHER LOGIN</h2>
+      <input type="email" name="email" placeholder="EMAIL" required>
+      <input type="password" name="password" placeholder="PASSWORD" required>
+      <button type="submit">ENTER DASHBOARD</button>
+    </form>
+
+    <p id="error" class="error"></p>
+  </div>
+
+  <div class="footer">PROBLOCKS LIGHT v1.0</div>
+
+  <script type="module" src="/js/auth.js"></script>
+</body>
+</html>
