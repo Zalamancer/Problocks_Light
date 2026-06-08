@@ -43,6 +43,7 @@ router.get('/api/game/map/:mapId', requireAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+
 // Request a question for an NPC encounter
 router.post('/api/game/encounter', requireAuth, async (req, res, next) => {
   try {

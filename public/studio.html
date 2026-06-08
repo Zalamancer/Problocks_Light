@@ -1,0 +1,2344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Problocks Studio</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #1a1b2e;
+      --bg-panel: #222340;
+      --bg-card: #2a2b48;
+      --bg-card-hover: #33345a;
+      --border: #3a3b5c;
+      --text: #e0e0f0;
+      --text-dim: #8888aa;
+      --accent: #6ee7b7;
+      --accent-dim: #2a8a6a;
+      --pro: #a78bfa;
+      --new: #6ee7b7;
+      --exp: #fbbf24;
+      --api: #38bdf8;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, sans-serif;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    /* ── Top Bar ── */
+    #topbar {
+      height: 48px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      z-index: 100;
+      position: relative;
+    }
+
+    #topbar .logo {
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #topbar .logo span {
+      color: var(--accent);
+    }
+
+    .topbar-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover {
+      background: var(--bg-card-hover);
+      border-color: #5a5b7c;
+    }
+
+    .btn-play {
+      background: var(--accent);
+      color: #1a1b2e;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+
+    .btn-play:hover {
+      background: #5dd4a8;
+      border-color: #5dd4a8;
+    }
+
+    /* ── Layout ── */
+    #workspace {
+      display: flex;
+      height: calc(100vh - 48px);
+    }
+
+    /* ── Left Panel ── */
+    #left-panel {
+      width: 300px;
+      min-width: 300px;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Tab bar */
+    .tab-bar {
+      display: flex;
+      padding: 8px 8px 0;
+      gap: 2px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .tab-btn {
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      font-family: inherit;
+      color: var(--text-dim);
+      background: none;
+      border: none;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover {
+      color: var(--text);
+    }
+
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    /* Tab content */
+    .tab-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .tab-page {
+      display: none;
+    }
+
+    .tab-page.active {
+      display: block;
+    }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      padding: 12px 4px 6px;
+    }
+
+    /* Tool cards */
+    .tool-card {
+      padding: 10px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tool-card:hover {
+      background: var(--bg-card-hover);
+      border-color: #5a5b7c;
+    }
+
+    .tool-card.selected {
+      border-color: var(--accent);
+      background: rgba(110, 231, 183, 0.08);
+    }
+
+    .tool-card .tool-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 3px;
+    }
+
+    .tool-card .tool-name {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .tool-card .tool-desc {
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.4;
+    }
+
+    .badge {
+      font-size: 9px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-pro {
+      background: rgba(167, 139, 250, 0.2);
+      color: var(--pro);
+    }
+
+    .badge-new {
+      background: rgba(110, 231, 183, 0.2);
+      color: var(--new);
+    }
+
+    .badge-exp {
+      background: rgba(251, 191, 36, 0.15);
+      color: var(--exp);
+    }
+
+    .badge-api {
+      background: rgba(56, 189, 248, 0.2);
+      color: var(--api);
+    }
+
+    /* ── Main Viewport ── */
+    #viewport {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      position: relative;
+    }
+
+    #viewport-canvas {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-dim);
+      font-size: 14px;
+    }
+
+    .empty-state {
+      text-align: center;
+      max-width: 320px;
+    }
+
+    .empty-state .icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.3;
+    }
+
+    .empty-state p {
+      line-height: 1.6;
+    }
+
+    /* ── Right Panel (tool settings) ── */
+    #right-panel {
+      width: 320px;
+      min-width: 320px;
+      background: var(--bg-panel);
+      border-left: 1px solid var(--border);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #right-panel.open {
+      display: flex;
+    }
+
+    .panel-header {
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel-close {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 18px;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .panel-close:hover {
+      color: var(--text);
+      background: var(--bg-card);
+    }
+
+    .panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    /* Tool indicator at top of panel */
+    .tool-indicator {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .tool-indicator .ti-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .tool-indicator .ti-name {
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tool-indicator .ti-desc {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .tool-indicator .ti-change {
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: inherit;
+    }
+
+    .tool-indicator .ti-change:hover {
+      text-decoration: underline;
+    }
+
+    .tool-cost {
+      font-size: 11px;
+      color: var(--exp);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Form fields */
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 5px;
+    }
+
+    .field label .required {
+      color: #f87171;
+    }
+
+    .field input,
+    .field textarea,
+    .field select {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .field input:focus,
+    .field textarea:focus,
+    .field select:focus {
+      border-color: var(--accent);
+    }
+
+    .field textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .field select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238888aa' d='M3 5l3 3 3-3'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+
+    .field .hint {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    .field-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .field-row .field {
+      flex: 1;
+    }
+
+    /* Dropzone */
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: transparent;
+    }
+
+    .dropzone:hover,
+    .dropzone.drag-over {
+      border-color: var(--accent);
+      background: rgba(110, 231, 183, 0.04);
+    }
+
+    .dropzone .dz-icons {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 8px;
+      font-size: 18px;
+      opacity: 0.5;
+    }
+
+    .dropzone .dz-text {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .dropzone .dz-limit {
+      font-size: 11px;
+      color: var(--accent-dim);
+      margin-top: 4px;
+    }
+
+    .dropzone input[type="file"] {
+      display: none;
+    }
+
+    .dropzone-thumbs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 8px;
+    }
+
+    .dropzone-thumbs img {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    /* Range slider */
+    .range-field {
+      margin-bottom: 16px;
+    }
+
+    .range-field .range-header {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .range-field input[type="range"] {
+      width: 100%;
+      height: 6px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: var(--border);
+      border-radius: 3px;
+      outline: none;
+    }
+
+    .range-field input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      border: 2px solid var(--bg-panel);
+    }
+
+    .range-field .range-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    .range-field .range-hint {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    /* Angle preview */
+    .angle-preview {
+      display: flex;
+      justify-content: center;
+      margin: 12px 0;
+    }
+
+    .angle-preview .cube {
+      width: 48px;
+      height: 48px;
+      background: var(--bg-card);
+      border: 2px solid var(--accent-dim);
+      border-radius: 4px;
+      position: relative;
+      transition: transform 0.2s;
+    }
+
+    /* Generate button */
+    .btn-generate {
+      width: 100%;
+      padding: 12px;
+      background: var(--accent);
+      color: #1a1b2e;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-top: 8px;
+    }
+
+    .btn-generate:hover {
+      background: #5dd4a8;
+    }
+
+    .btn-generate:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Gallery */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .gallery-item {
+      aspect-ratio: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .gallery-item:hover {
+      border-color: var(--accent);
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+
+    /* Status bar */
+    #statusbar {
+      height: 28px;
+      background: var(--bg-panel);
+      border-top: 1px solid var(--border);
+      padding: 0 12px;
+      font-size: 11px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* ── Map Painter ── */
+    #map-painter {
+      display: none;
+      width: 100%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #map-painter.active {
+      display: block;
+    }
+
+    #map-canvas {
+      cursor: crosshair;
+      image-rendering: pixelated;
+    }
+
+    .terrain-palette {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 16px;
+    }
+
+    .terrain-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .terrain-btn:hover {
+      border-color: #5a5b7c;
+    }
+
+    .terrain-btn.active {
+      border-color: var(--accent);
+      background: rgba(110, 231, 183, 0.08);
+    }
+
+    .terrain-swatch {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.1);
+      image-rendering: pixelated;
+    }
+
+    .map-toolbar {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 4px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px;
+      z-index: 5;
+    }
+
+    .map-toolbar button {
+      padding: 6px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .map-toolbar button:hover {
+      background: var(--bg-card-hover);
+    }
+
+    .map-toolbar button.active {
+      background: var(--accent);
+      color: #1a1b2e;
+      border-color: var(--accent);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #5a5b7c; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <div id="topbar">
+    <div class="logo">
+      <span>P</span>roblocks Studio
+    </div>
+    <div class="topbar-actions">
+      <button class="btn" id="btn-assets">Assets</button>
+      <button class="btn btn-play" id="btn-play">Play</button>
+    </div>
+  </div>
+
+  <!-- Workspace -->
+  <div id="workspace">
+
+    <!-- Left Panel: Tool Selection -->
+    <div id="left-panel">
+      <div class="tab-bar">
+        <button class="tab-btn" data-tab="map">Map</button>
+        <button class="tab-btn active" data-tab="create">Create</button>
+        <button class="tab-btn" data-tab="tilesets">Tilesets</button>
+        <button class="tab-btn" data-tab="animate">Animate</button>
+        <button class="tab-btn" data-tab="transform">Transform</button>
+        <button class="tab-btn" data-tab="utility">Utility</button>
+      </div>
+
+      <div class="tab-content">
+
+        <!-- MAP -->
+        <div class="tab-page" id="tab-map">
+          <div class="section-label">Terrain Palette</div>
+          <div class="terrain-palette" id="terrain-palette"></div>
+
+          <div class="section-label">Brush</div>
+          <div class="field">
+            <label>Brush size</label>
+            <select id="brush-size">
+              <option value="1">1x1</option>
+              <option value="2">2x2</option>
+              <option value="3" selected>3x3</option>
+              <option value="5">5x5</option>
+              <option value="8">8x8</option>
+            </select>
+          </div>
+
+          <div class="section-label">Map Settings</div>
+          <div class="field-row">
+            <div class="field">
+              <label>Width</label>
+              <input type="number" id="map-width" value="60" min="10" max="256">
+            </div>
+            <div class="field">
+              <label>Height</label>
+              <input type="number" id="map-height" value="45" min="10" max="256">
+            </div>
+          </div>
+          <button class="btn-generate" id="btn-new-map" style="margin-bottom:8px;">New Map</button>
+          <button class="btn-generate" id="btn-export-map" style="background:var(--bg-card);color:var(--text);border:1px solid var(--border);">Export JSON</button>
+        </div>
+
+        <!-- CREATE -->
+        <div class="tab-page active" id="tab-create">
+          <div class="section-label">Characters</div>
+
+          <div class="tool-card" data-tool="create-character">
+            <div class="tool-header">
+              <span class="tool-name">Create Character</span>
+              <span class="badge badge-api">API</span>
+            </div>
+            <div class="tool-desc">8-directional sprite with all views</div>
+          </div>
+
+          <div class="tool-card" data-tool="create-8dir-sprite">
+            <div class="tool-header">
+              <span class="tool-name">Create 8-Dir Sprite</span>
+              <span class="badge badge-pro">PRO</span>
+            </div>
+            <div class="tool-desc">Generate 8 directional views</div>
+          </div>
+
+          <div class="section-label">Objects</div>
+
+          <div class="tool-card" data-tool="create-map-object">
+            <div class="tool-header">
+              <span class="tool-name">Create Map Object</span>
+              <span class="badge badge-api">API</span>
+            </div>
+            <div class="tool-desc">Trees, rocks, buildings, props</div>
+          </div>
+
+          <div class="section-label">Images</div>
+
+          <div class="tool-card" data-tool="create-sm-image">
+            <div class="tool-header">
+              <span class="tool-name">Create S-M Image</span>
+            </div>
+            <div class="tool-desc">Best for 16-64px</div>
+          </div>
+
+          <div class="tool-card" data-tool="create-mxl-image">
+            <div class="tool-header">
+              <span class="tool-name">Create M-XL Image</span>
+            </div>
+            <div class="tool-desc">Best for 64px and larger</div>
+          </div>
+
+          <div class="tool-card" data-tool="create-image-pro">
+            <div class="tool-header">
+              <span class="tool-name">Create Image</span>
+              <span class="badge badge-pro">PRO</span>
+            </div>
+            <div class="tool-desc">High quality generation</div>
+          </div>
+
+          <div class="tool-card" data-tool="image-to-pixel-art">
+            <div class="tool-header">
+              <span class="tool-name">Image to Pixel Art</span>
+            </div>
+            <div class="tool-desc">Convert any image to pixel art</div>
+          </div>
+
+          <div class="tool-card" data-tool="create-from-style">
+            <div class="tool-header">
+              <span class="tool-name">Create from Style Ref</span>
+              <span class="badge badge-pro">PRO</span>
+            </div>
+            <div class="tool-desc">Match your art style</div>
+          </div>
+
+          <div class="section-label">UI</div>
+
+          <div class="tool-card" data-tool="create-ui-elements">
+            <div class="tool-header">
+              <span class="tool-name">Create UI Elements</span>
+              <span class="badge badge-pro">PRO</span>
+            </div>
+            <div class="tool-desc">Game UI components</div>
+          </div>
+
+          <div class="tool-card" data-tool="create-ui-experimental">
+            <div class="tool-header">
+              <span class="tool-name">Create UI Elements</span>
+              <span class="badge badge-exp">EXPERIMENTAL</span>
+            </div>
+            <div class="tool-desc">Tier 2 subscription</div>
+          </div>
+        </div>
+
+        <!-- TILESETS -->
+        <div class="tab-page" id="tab-tilesets">
+          <div class="section-label">Game Tilesets</div>
+
+          <div class="tool-card" data-tool="create-topdown-tileset">
+            <div class="tool-header">
+              <span class="tool-name">Top-Down Tileset</span>
+              <span class="badge badge-api">API</span>
+            </div>
+            <div class="tool-desc">Wang tileset for seamless terrain transitions</div>
+          </div>
+
+          <div class="tool-card" data-tool="create-sidescroller-tileset">
+            <div class="tool-header">
+              <span class="tool-name">Sidescroller Tileset</span>
+              <span class="badge badge-api">API</span>
+            </div>
+            <div class="tool-desc">Platformer-style tilesets</div>
+          </div>
+
+          <div class="tool-card" data-tool="create-isometric-tile">
+            <div class="tool-header">
+              <span class="tool-name">Isometric Tile</span>
+              <span class="badge badge-api">API</span>
+            </div>
+            <div class="tool-desc">Isometric perspective tiles</div>
+          </div>
+
+          <div class="tool-card" data-tool="create-tiles-pro">
+            <div class="tool-header">
+              <span class="tool-name">Create Tiles</span>
+              <span class="badge badge-pro">PRO</span>
+            </div>
+            <div class="tool-desc">Generate tile variations for games</div>
+          </div>
+        </div>
+
+        <!-- ANIMATE -->
+        <div class="tab-page" id="tab-animate">
+          <div class="section-label">Character Animation</div>
+
+          <div class="tool-card" data-tool="animate-character">
+            <div class="tool-header">
+              <span class="tool-name">Animate Character</span>
+              <span class="badge badge-api">API</span>
+            </div>
+            <div class="tool-desc">Walk, run, idle animations for characters</div>
+          </div>
+
+          <div class="section-label">General Animation</div>
+
+          <div class="tool-card" data-tool="animate-with-text">
+            <div class="tool-header">
+              <span class="tool-name">Animate with Text</span>
+              <span class="badge badge-new">NEW</span>
+            </div>
+            <div class="tool-desc">Generate animation from text</div>
+          </div>
+
+          <div class="tool-card" data-tool="interpolate">
+            <div class="tool-header">
+              <span class="tool-name">Interpolate</span>
+              <span class="badge badge-new">NEW</span>
+            </div>
+            <div class="tool-desc">Animate between two frames</div>
+          </div>
+
+          <div class="tool-card" data-tool="create-animated-object">
+            <div class="tool-header">
+              <span class="tool-name">Animated Object/Character</span>
+              <span class="badge badge-pro">PRO</span>
+            </div>
+            <div class="tool-desc">Generate animation from text</div>
+          </div>
+
+          <div class="tool-card" data-tool="animate-with-text-pro">
+            <div class="tool-header">
+              <span class="tool-name">Animate with Text</span>
+              <span class="badge badge-pro">PRO</span>
+            </div>
+            <div class="tool-desc">Add animation to existing image</div>
+          </div>
+
+          <div class="tool-card" data-tool="edit-animation">
+            <div class="tool-header">
+              <span class="tool-name">Edit Animation</span>
+              <span class="badge badge-pro">PRO</span>
+            </div>
+            <div class="tool-desc">Modify frames of an animation</div>
+          </div>
+
+          <div class="tool-card" data-tool="transfer-outfit">
+            <div class="tool-header">
+              <span class="tool-name">Transfer Outfit to Anim</span>
+              <span class="badge badge-pro">PRO</span>
+            </div>
+            <div class="tool-desc">Apply outfit to another animation</div>
+          </div>
+
+          <div class="tool-card" data-tool="interpolate-pro">
+            <div class="tool-header">
+              <span class="tool-name">Interpolate</span>
+              <span class="badge badge-pro">PRO</span>
+            </div>
+            <div class="tool-desc">Smooth transitions between frames</div>
+          </div>
+        </div>
+
+        <!-- TRANSFORM -->
+        <div class="tab-page" id="tab-transform">
+          <div class="section-label">Image Transformation</div>
+
+          <div class="tool-card" data-tool="image-to-image">
+            <div class="tool-header">
+              <span class="tool-name">Image to Image</span>
+            </div>
+            <div class="tool-desc">Transform using depth guidance</div>
+          </div>
+
+          <div class="tool-card" data-tool="edit-image">
+            <div class="tool-header">
+              <span class="tool-name">Edit Image</span>
+            </div>
+            <div class="tool-desc">Edit parts of an existing image</div>
+          </div>
+
+          <div class="tool-card" data-tool="edit-image-pro">
+            <div class="tool-header">
+              <span class="tool-name">Edit Image</span>
+              <span class="badge badge-pro">PRO</span>
+            </div>
+            <div class="tool-desc">Advanced AI image editing</div>
+          </div>
+        </div>
+
+        <!-- UTILITY -->
+        <div class="tab-page" id="tab-utility">
+          <div class="section-label">Cleanup Tools</div>
+
+          <div class="tool-card" data-tool="unzoom">
+            <div class="tool-header">
+              <span class="tool-name">Unzoom</span>
+              <span class="badge badge-new">NEW</span>
+            </div>
+            <div class="tool-desc">Detect pixel scale and downscale</div>
+          </div>
+
+          <div class="tool-card" data-tool="remove-background">
+            <div class="tool-header">
+              <span class="tool-name">Remove Background</span>
+              <span class="badge badge-new">NEW</span>
+            </div>
+            <div class="tool-desc">Remove background from image</div>
+          </div>
+
+          <div class="tool-card" data-tool="pixel-art-correction">
+            <div class="tool-header">
+              <span class="tool-name">Pixel Art Correction</span>
+              <span class="badge badge-new">NEW</span>
+            </div>
+            <div class="tool-desc">Clean up and refine pixel art</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Main Viewport -->
+    <div id="viewport">
+      <div id="viewport-canvas">
+        <div class="empty-state">
+          <div class="icon">+</div>
+          <p>Select a tool from the left panel to get started, or click <strong>Play</strong> to test your game.</p>
+        </div>
+      </div>
+      <div id="map-painter">
+        <div class="map-toolbar">
+          <button class="active" data-tool="brush">Brush</button>
+          <button data-tool="fill">Fill</button>
+          <button data-tool="eraser">Eraser</button>
+        </div>
+        <canvas id="map-canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- Right Panel: Tool Settings -->
+    <div id="right-panel">
+      <div class="panel-header">
+        <span id="right-panel-title">Tool Settings</span>
+        <button class="panel-close" id="panel-close">&times;</button>
+      </div>
+      <div class="panel-body" id="panel-body">
+        <!-- Dynamic form content injected here -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Status Bar -->
+  <div id="statusbar">
+    <span>Problocks Studio v0.1</span>
+    <span id="status-msg">Ready</span>
+  </div>
+
+  <script>
+    // ── Tab switching ──
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    // ── Tool card selection → open right panel ──
+    // Field types: textarea, select, number, text, file, dropzone, range
+    const TOOL_FORMS = {
+
+      // ── CREATE ──
+
+      'create-character': {
+        title: 'Create Character', badge: 'API', cost: 20,
+        desc: 'Generate character with all directional views',
+        fields: [
+          { id: 'prompt', label: 'Description', type: 'textarea', required: true,
+            placeholder: 'e.g. a knight in silver armor, Stardew Valley style',
+            hint: 'Describe the character appearance and art style' },
+          { id: 'style_refs', label: 'Style references (optional)', type: 'dropzone',
+            hint: 'Upload up to 4 reference images to guide the style', max: 4, maxSize: '128x128' },
+          { id: 'directions', label: 'Directions', type: 'select',
+            options: ['8 directions', '4 directions'] },
+          { id: 'size', label: 'Sprite size', type: 'select',
+            options: ['32px', '48px', '64px'] },
+        ]
+      },
+
+      'create-8dir-sprite': {
+        title: 'Create 8-Dir Sprite', badge: 'PRO', cost: 20,
+        desc: 'Generate 8 directional views',
+        fields: [
+          { id: 'prompt', label: 'Description', type: 'textarea', required: true,
+            placeholder: 'Describe the character or object' },
+          { id: 'style_refs', label: 'Style references (optional)', type: 'dropzone',
+            max: 4, maxSize: '128x128' },
+          { id: 'size', label: 'Sprite size', type: 'select',
+            options: ['32px', '48px', '64px', '96px'] },
+        ]
+      },
+
+      'create-map-object': {
+        title: 'Create Map Object', badge: 'API', cost: 10,
+        desc: 'Trees, rocks, buildings, props',
+        fields: [
+          { id: 'prompt', label: 'Description', type: 'textarea', required: true,
+            placeholder: 'e.g. large oak tree with autumn leaves, pixel art',
+            hint: 'Describe the object and desired art style' },
+          { id: 'style_refs', label: 'Style references (optional)', type: 'dropzone',
+            max: 4, maxSize: '128x128' },
+          { id: 'width', label: 'Width (px)', type: 'number', value: 64 },
+          { id: 'height', label: 'Height (px)', type: 'number', value: 64 },
+          { id: 'view_angle', label: 'View angle', type: 'range',
+            min: 0, max: 90, value: 70, unit: '\u00b0',
+            labelMin: '0\u00b0 side', labelMax: '90\u00b0 top-down', showPreview: true },
+          { id: 'outline', label: 'Outline mode', type: 'select',
+            options: ['Outline (default)', 'Lineless', 'Thick outline'] },
+        ]
+      },
+
+      'create-sm-image': {
+        title: 'Create S-M Image', cost: 5,
+        desc: 'Best for 16-64px',
+        fields: [
+          { id: 'prompt', label: 'Description', type: 'textarea', required: true,
+            placeholder: 'Describe the pixel art (16-64px)' },
+          { id: 'size', label: 'Size', type: 'select',
+            options: ['16x16', '24x24', '32x32', '48x48', '64x64'] },
+          { id: 'outline', label: 'Outline mode', type: 'select',
+            options: ['Outline (default)', 'Lineless', 'Thick outline'] },
+        ]
+      },
+
+      'create-mxl-image': {
+        title: 'Create M-XL Image', cost: 10,
+        desc: 'Best for 64px and larger',
+        fields: [
+          { id: 'prompt', label: 'Description', type: 'textarea', required: true,
+            placeholder: 'Describe the pixel art (64px+)' },
+          { id: 'size', label: 'Size', type: 'select',
+            options: ['64x64', '96x96', '128x128', '192x192', '256x256'] },
+          { id: 'outline', label: 'Outline mode', type: 'select',
+            options: ['Outline (default)', 'Lineless', 'Thick outline'] },
+        ]
+      },
+
+      'create-image-pro': {
+        title: 'Create Image', badge: 'PRO', cost: 20,
+        desc: 'High quality generation',
+        fields: [
+          { id: 'prompt', label: 'Description', type: 'textarea', required: true,
+            placeholder: 'High quality pixel art description' },
+          { id: 'style_refs', label: 'Style references (optional)', type: 'dropzone',
+            max: 4, maxSize: '128x128' },
+          { id: 'size', label: 'Size', type: 'select',
+            options: ['32x32', '48x48', '64x64', '96x96', '128x128', '256x256'] },
+          { id: 'outline', label: 'Outline mode', type: 'select',
+            options: ['Outline (default)', 'Lineless', 'Thick outline'] },
+        ]
+      },
+
+      'image-to-pixel-art': {
+        title: 'Image to Pixel Art', cost: 5,
+        desc: 'Convert any image to pixel art',
+        fields: [
+          { id: 'image', label: 'Source image', type: 'dropzone', required: true,
+            max: 1, maxSize: '512x512', hint: 'Upload the image to convert' },
+          { id: 'pixel_size', label: 'Target pixel size', type: 'select',
+            options: ['16x16', '32x32', '48x48', '64x64', '128x128'] },
+          { id: 'outline', label: 'Outline mode', type: 'select',
+            options: ['Outline (default)', 'Lineless', 'Thick outline'] },
+        ]
+      },
+
+      'create-from-style': {
+        title: 'Create from Style Reference', badge: 'PRO', cost: 20,
+        desc: 'Match your art style',
+        fields: [
+          { id: 'prompt', label: 'Description', type: 'textarea', required: true,
+            placeholder: 'What to generate' },
+          { id: 'style_ref', label: 'Style reference image', type: 'dropzone', required: true,
+            max: 1, maxSize: '128x128', hint: 'Upload an image whose style to match' },
+          { id: 'size', label: 'Size', type: 'select',
+            options: ['32x32', '48x48', '64x64', '96x96', '128x128'] },
+        ]
+      },
+
+      'create-ui-elements': {
+        title: 'Create UI Elements', badge: 'PRO', cost: 20,
+        desc: 'Create game UI components',
+        fields: [
+          { id: 'prompt', label: 'Description', type: 'textarea', required: true,
+            placeholder: 'e.g. health bar, inventory slot, button with gold border' },
+          { id: 'style_refs', label: 'Style references (optional)', type: 'dropzone',
+            max: 4, maxSize: '128x128' },
+          { id: 'size', label: 'Size', type: 'select',
+            options: ['32x32', '48x48', '64x64', '96x96', '128x128'] },
+        ]
+      },
+
+      'create-ui-experimental': {
+        title: 'Create UI Elements', badge: 'EXP', cost: 20,
+        desc: 'Experimental - Tier 2 subscription',
+        fields: [
+          { id: 'prompt', label: 'Description', type: 'textarea', required: true,
+            placeholder: 'Describe the UI element' },
+          { id: 'size', label: 'Size', type: 'select',
+            options: ['32x32', '64x64', '128x128'] },
+        ]
+      },
+
+      // ── TILESETS ──
+
+      'create-tiles-pro': {
+        title: 'Create Tiles', badge: 'PRO', cost: 20,
+        desc: 'Generate tile variations for games',
+        fields: [
+          { id: 'prompt', label: 'Description', type: 'textarea', required: true,
+            placeholder: 'Rich, saturated colors with a warm, earthy tone. Lots of greens for grass. vibrant, multi color grass blades. high resolution and detailed.',
+            hint: 'Describe each tile or give a general description for all' },
+          { id: 'style_tiles', label: 'Style tiles (optional)', type: 'dropzone',
+            hint: 'Upload up to 16 pixel art tiles to guide the art style', max: 16, maxSize: '128x128' },
+          { id: 'n_tiles', label: 'Number of tiles', type: 'select',
+            options: ['4', '8', '16', '24', '32'] },
+          { id: 'tile_type', label: 'Tile type', type: 'select',
+            options: ['Square top-down', 'Square side-view', 'Isometric', 'Hexagonal (flat-top)', 'Hexagonal (pointy-top)', 'Octagonal'] },
+          { id: 'tile_size', label: 'Tile size', type: 'select',
+            options: ['16px', '32px', '48px', '64px'] },
+          { id: 'view_angle', label: 'View angle', type: 'range',
+            min: 0, max: 90, value: 70, unit: '\u00b0',
+            labelMin: '0\u00b0 side', labelMax: '90\u00b0 top-down', showPreview: true },
+          { id: 'thickness', label: 'Thickness', type: 'range',
+            min: 0, max: 100, value: 0, unit: '%',
+            labelMin: '0%', labelMax: '100%',
+            hint: 'Controls the depth/thickness of tile sides' },
+          { id: 'outline', label: 'Outline mode', type: 'select',
+            options: ['Outline (default)', 'Lineless', 'Thick outline'] },
+        ]
+      },
+
+      'create-topdown-tileset': {
+        title: 'Top-Down Wang Tileset', badge: 'API', cost: 20,
+        desc: 'Wang tileset for seamless terrain transitions',
+        fields: [
+          { id: 'lower_prompt', label: 'Lower terrain', type: 'textarea', required: true,
+            placeholder: 'e.g. warm golden sandy ground, Stardew Valley style',
+            hint: 'The terrain that appears in transition gaps' },
+          { id: 'upper_prompt', label: 'Upper terrain', type: 'textarea', required: true,
+            placeholder: 'e.g. lush vibrant green grass, Stardew Valley style',
+            hint: 'The terrain that expands over the lower' },
+          { id: 'style_tiles', label: 'Style tiles (optional)', type: 'dropzone',
+            hint: 'Upload reference tiles to guide the style', max: 16, maxSize: '128x128' },
+          { id: 'tile_size', label: 'Tile size', type: 'select',
+            options: ['16px', '32px'] },
+          { id: 'view_angle', label: 'View angle', type: 'range',
+            min: 0, max: 90, value: 90, unit: '\u00b0',
+            labelMin: '0\u00b0 side', labelMax: '90\u00b0 top-down', showPreview: true },
+          { id: 'outline', label: 'Outline mode', type: 'select',
+            options: ['Lineless', 'Outline (default)', 'Thick outline'] },
+        ]
+      },
+
+      'create-sidescroller-tileset': {
+        title: 'Sidescroller Tileset', badge: 'API', cost: 20,
+        desc: 'Platformer-style tilesets',
+        fields: [
+          { id: 'prompt', label: 'Description', type: 'textarea', required: true,
+            placeholder: 'e.g. mossy stone platform, underground cave dirt',
+            hint: 'Describe the terrain style for the platformer tileset' },
+          { id: 'style_tiles', label: 'Style tiles (optional)', type: 'dropzone',
+            max: 16, maxSize: '128x128' },
+          { id: 'tile_size', label: 'Tile size', type: 'select',
+            options: ['16px', '32px'] },
+          { id: 'thickness', label: 'Thickness', type: 'range',
+            min: 0, max: 100, value: 30, unit: '%',
+            labelMin: '0%', labelMax: '100%',
+            hint: 'Controls the depth/thickness of platform edges' },
+          { id: 'outline', label: 'Outline mode', type: 'select',
+            options: ['Outline (default)', 'Lineless', 'Thick outline'] },
+        ]
+      },
+
+      'create-isometric-tile': {
+        title: 'Isometric Tile', badge: 'API', cost: 10,
+        desc: 'Isometric perspective tiles',
+        fields: [
+          { id: 'prompt', label: 'Description', type: 'textarea', required: true,
+            placeholder: 'e.g. grassy hill, stone floor, water pool' },
+          { id: 'style_tiles', label: 'Style tiles (optional)', type: 'dropzone',
+            max: 4, maxSize: '128x128' },
+          { id: 'tile_size', label: 'Tile size', type: 'select',
+            options: ['32px', '64px'] },
+          { id: 'thickness', label: 'Thickness', type: 'range',
+            min: 0, max: 100, value: 20, unit: '%',
+            labelMin: '0%', labelMax: '100%',
+            hint: 'Controls the depth of the isometric tile sides' },
+          { id: 'outline', label: 'Outline mode', type: 'select',
+            options: ['Outline (default)', 'Lineless'] },
+        ]
+      },
+
+      // ── ANIMATE ──
+
+      'animate-character': {
+        title: 'Animate Character', badge: 'API', cost: 20,
+        desc: 'Walk, run, idle animations for existing characters',
+        fields: [
+          { id: 'character_id', label: 'Character ID', type: 'text', required: true,
+            placeholder: 'Paste character UUID',
+            hint: 'The ID of a previously created character' },
+          { id: 'animation', label: 'Animation type', type: 'select',
+            options: ['walk', 'run', 'idle', 'attack', 'death', 'jump', 'cast'] },
+          { id: 'frames', label: 'Frame count', type: 'select',
+            options: ['4 frames', '6 frames', '8 frames'] },
+          { id: 'directions', label: 'Directions', type: 'select',
+            options: ['4 directions', '8 directions'] },
+        ]
+      },
+
+      'animate-with-text': {
+        title: 'Animate with Text', badge: 'NEW', cost: 5,
+        desc: 'Generate animation from text',
+        fields: [
+          { id: 'prompt', label: 'Animation description', type: 'textarea', required: true,
+            placeholder: 'e.g. a coin spinning and glowing' },
+          { id: 'frames', label: 'Frame count', type: 'select',
+            options: ['4 frames', '6 frames', '8 frames', '12 frames'] },
+          { id: 'size', label: 'Size', type: 'select',
+            options: ['16x16', '32x32', '48x48', '64x64'] },
+        ]
+      },
+
+      'interpolate': {
+        title: 'Interpolate', badge: 'NEW', cost: 5,
+        desc: 'Animate between two frames',
+        fields: [
+          { id: 'frames_upload', label: 'Upload frames', type: 'dropzone', required: true,
+            max: 2, maxSize: '128x128', hint: 'Upload exactly 2 frames (start and end)' },
+          { id: 'frame_count', label: 'Intermediate frames', type: 'select',
+            options: ['2 frames', '4 frames', '6 frames', '8 frames'] },
+        ]
+      },
+
+      'create-animated-object': {
+        title: 'Animated Object/Character', badge: 'PRO', cost: 20,
+        desc: 'Generate animation from text',
+        fields: [
+          { id: 'prompt', label: 'Description', type: 'textarea', required: true,
+            placeholder: 'e.g. a torch flickering with orange flames' },
+          { id: 'style_refs', label: 'Style references (optional)', type: 'dropzone',
+            max: 4, maxSize: '128x128' },
+          { id: 'frames', label: 'Frame count', type: 'select',
+            options: ['4 frames', '6 frames', '8 frames', '12 frames'] },
+          { id: 'size', label: 'Size', type: 'select',
+            options: ['32x32', '48x48', '64x64', '96x96'] },
+        ]
+      },
+
+      'animate-with-text-pro': {
+        title: 'Animate with Text', badge: 'PRO', cost: 20,
+        desc: 'Add animation to existing image',
+        fields: [
+          { id: 'image', label: 'Source image', type: 'dropzone', required: true,
+            max: 1, maxSize: '128x128', hint: 'The static image to animate' },
+          { id: 'prompt', label: 'Animation description', type: 'textarea', required: true,
+            placeholder: 'e.g. make the character wave their hand' },
+          { id: 'frames', label: 'Frame count', type: 'select',
+            options: ['4 frames', '6 frames', '8 frames'] },
+        ]
+      },
+
+      'edit-animation': {
+        title: 'Edit Animation', badge: 'PRO', cost: 20,
+        desc: 'Modify frames of an animation',
+        fields: [
+          { id: 'frames_upload', label: 'Upload animation frames', type: 'dropzone', required: true,
+            max: 16, maxSize: '128x128', hint: 'Upload the frames to modify' },
+          { id: 'prompt', label: 'Edit instructions', type: 'textarea', required: true,
+            placeholder: 'e.g. change the sword to a staff' },
+        ]
+      },
+
+      'transfer-outfit': {
+        title: 'Transfer Outfit to Animation', badge: 'PRO', cost: 20,
+        desc: 'Apply outfit to another animation',
+        fields: [
+          { id: 'outfit', label: 'Outfit image', type: 'dropzone', required: true,
+            max: 1, maxSize: '128x128', hint: 'The outfit/skin to transfer' },
+          { id: 'anim_frames', label: 'Animation frames', type: 'dropzone', required: true,
+            max: 16, maxSize: '128x128', hint: 'The animation to apply the outfit to' },
+        ]
+      },
+
+      'interpolate-pro': {
+        title: 'Interpolate', badge: 'PRO', cost: 20,
+        desc: 'Smooth transitions between frames',
+        fields: [
+          { id: 'frames_upload', label: 'Upload frames', type: 'dropzone', required: true,
+            max: 16, maxSize: '128x128', hint: 'Upload keyframes for smooth interpolation' },
+          { id: 'frame_count', label: 'Output frames per gap', type: 'select',
+            options: ['2 frames', '4 frames', '6 frames', '8 frames'] },
+        ]
+      },
+
+      // ── TRANSFORM ──
+
+      'image-to-image': {
+        title: 'Image to Image', cost: 5,
+        desc: 'Transform using depth guidance',
+        fields: [
+          { id: 'image', label: 'Source image', type: 'dropzone', required: true,
+            max: 1, maxSize: '512x512' },
+          { id: 'prompt', label: 'Transform description', type: 'textarea', required: true,
+            placeholder: 'e.g. make it look like a medieval castle' },
+          { id: 'strength', label: 'Transform strength', type: 'range',
+            min: 0, max: 100, value: 50, unit: '%',
+            labelMin: 'Subtle', labelMax: 'Strong' },
+        ]
+      },
+
+      'edit-image': {
+        title: 'Edit Image', cost: 5,
+        desc: 'Edit parts of an existing image',
+        fields: [
+          { id: 'image', label: 'Image to edit', type: 'dropzone', required: true,
+            max: 1, maxSize: '512x512' },
+          { id: 'prompt', label: 'Edit instructions', type: 'textarea', required: true,
+            placeholder: 'e.g. change the hat color to red' },
+        ]
+      },
+
+      'edit-image-pro': {
+        title: 'Edit Image', badge: 'PRO', cost: 20,
+        desc: 'Advanced AI image editing',
+        fields: [
+          { id: 'image', label: 'Image to edit', type: 'dropzone', required: true,
+            max: 1, maxSize: '512x512' },
+          { id: 'prompt', label: 'Edit instructions', type: 'textarea', required: true,
+            placeholder: 'Describe the edits in detail' },
+          { id: 'mask', label: 'Mask (optional)', type: 'dropzone',
+            max: 1, maxSize: '512x512', hint: 'Upload a mask to limit editing area' },
+        ]
+      },
+
+      // ── UTILITY ──
+
+      'unzoom': {
+        title: 'Unzoom', badge: 'NEW', cost: 1,
+        desc: 'Detect pixel scale and downscale',
+        fields: [
+          { id: 'image', label: 'Upload image', type: 'dropzone', required: true,
+            max: 1, maxSize: '512x512', hint: 'Upload an upscaled pixel art image to detect and reduce to native resolution' },
+        ]
+      },
+
+      'remove-background': {
+        title: 'Remove Background', badge: 'NEW', cost: 1,
+        desc: 'Remove background from image',
+        fields: [
+          { id: 'image', label: 'Upload image', type: 'dropzone', required: true,
+            max: 1, maxSize: '512x512' },
+        ]
+      },
+
+      'pixel-art-correction': {
+        title: 'Pixel Art Correction', badge: 'NEW', cost: 1,
+        desc: 'Clean up and refine pixel art',
+        fields: [
+          { id: 'image', label: 'Upload image', type: 'dropzone', required: true,
+            max: 1, maxSize: '512x512', hint: 'Upload pixel art with artifacts, anti-aliasing, or other issues to clean up' },
+        ]
+      },
+    };
+
+    const BADGE_CLASS = { PRO: 'badge-pro', NEW: 'badge-new', EXP: 'badge-exp', API: 'badge-api' };
+
+    let selectedTool = null;
+
+    document.querySelectorAll('.tool-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.tool-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        const toolId = card.dataset.tool;
+        selectedTool = toolId;
+        openRightPanel(TOOL_FORMS[toolId]);
+      });
+    });
+
+    function openRightPanel(form) {
+      if (!form) return;
+      const panel = document.getElementById('right-panel');
+      const title = document.getElementById('right-panel-title');
+      const body = document.getElementById('panel-body');
+      title.textContent = form.title;
+
+      let html = '';
+
+      // Tool indicator
+      html += '<div class="tool-indicator"><div class="ti-left">';
+      html += `<div class="ti-name">${form.title}`;
+      if (form.badge) html += ` <span class="badge ${BADGE_CLASS[form.badge] || 'badge-pro'}">${form.badge}</span>`;
+      html += '</div>';
+      if (form.desc) html += `<div class="ti-desc">${form.desc}</div>`;
+      html += '</div><button class="ti-change">Change</button></div>';
+
+      // Cost
+      if (form.cost) {
+        html += `<div class="tool-cost">\u26a0 This tool costs ${form.cost} generations.</div>`;
+      }
+
+      // Fields
+      for (const f of form.fields) {
+        if (f.type === 'range') {
+          html += '<div class="range-field">';
+          html += `<div class="range-header">${f.label}: <span id="rv-${f.id}">${f.value}${f.unit || ''}</span></div>`;
+          html += `<input type="range" id="field-${f.id}" min="${f.min}" max="${f.max}" value="${f.value}" data-unit="${f.unit || ''}">`;
+          html += `<div class="range-labels"><span>${f.labelMin || f.min}</span><span>${f.labelMax || f.max}</span></div>`;
+          if (f.showPreview) {
+            const skew = Math.round((1 - f.value / 90) * 30);
+            html += `<div class="angle-preview"><div class="cube" id="cube-${f.id}" style="transform:perspective(120px) rotateX(${f.value * 0.6}deg)"></div></div>`;
+          }
+          if (f.hint) html += `<div class="range-hint">${f.hint}</div>`;
+          html += '</div>';
+
+        } else if (f.type === 'dropzone') {
+          html += '<div class="field">';
+          html += `<label>${f.label}${f.required ? ' <span class="required">*</span>' : ''}</label>`;
+          html += `<div class="dropzone" id="dz-${f.id}">`;
+          html += '<div class="dz-icons">\ud83d\uddbc\ufe0f \u2b06\ufe0f \ud83d\udccb</div>';
+          html += '<div class="dz-text">Click to upload or drag and drop</div>';
+          if (f.maxSize) html += `<div class="dz-limit">Max ${f.maxSize}</div>`;
+          html += `<input type="file" id="field-${f.id}" accept="image/*" ${f.max > 1 ? 'multiple' : ''}>`;
+          html += `<div class="dropzone-thumbs" id="thumbs-${f.id}"></div>`;
+          html += '</div>';
+          if (f.hint) html += `<div class="hint">${f.hint} (${f.max ? '0/' + f.max : ''})</div>`;
+          html += '</div>';
+
+        } else {
+          html += '<div class="field">';
+          html += `<label for="field-${f.id}">${f.label}${f.required ? ' <span class="required">*</span>' : ''}</label>`;
+
+          if (f.type === 'textarea') {
+            html += `<textarea id="field-${f.id}" placeholder="${f.placeholder || ''}"></textarea>`;
+          } else if (f.type === 'select') {
+            html += `<select id="field-${f.id}">`;
+            for (const opt of f.options) html += `<option value="${opt}">${opt}</option>`;
+            html += '</select>';
+          } else if (f.type === 'number') {
+            html += `<input type="number" id="field-${f.id}" value="${f.value || ''}">`;
+          } else {
+            html += `<input type="text" id="field-${f.id}" placeholder="${f.placeholder || ''}" value="${f.value || ''}">`;
+          }
+
+          if (f.hint) html += `<div class="hint">${f.hint}</div>`;
+          html += '</div>';
+        }
+      }
+
+      const costText = form.cost ? ` \u00b7 ${form.cost} generations` : '';
+      html += `<button class="btn-generate" id="btn-gen">Generate${costText}</button>`;
+      html += '<div id="gen-result" style="margin-top:16px"></div>';
+
+      body.innerHTML = html;
+      panel.classList.add('open');
+
+      // Wire range sliders
+      body.querySelectorAll('input[type="range"]').forEach(slider => {
+        slider.addEventListener('input', () => {
+          const id = slider.id.replace('field-', '');
+          const unit = slider.dataset.unit || '';
+          const rv = document.getElementById('rv-' + id);
+          if (rv) rv.textContent = slider.value + unit;
+          const cube = document.getElementById('cube-' + id);
+          if (cube) cube.style.transform = `perspective(120px) rotateX(${slider.value * 0.6}deg)`;
+        });
+      });
+
+      // Wire dropzones
+      body.querySelectorAll('.dropzone').forEach(dz => {
+        const input = dz.querySelector('input[type="file"]');
+        dz.addEventListener('click', (e) => { if (e.target !== input) input.click(); });
+        dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('drag-over'); });
+        dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+        dz.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dz.classList.remove('drag-over');
+          handleFiles(dz, e.dataTransfer.files);
+        });
+        input.addEventListener('change', () => handleFiles(dz, input.files));
+      });
+
+      // Wire change button
+      const changeBtn = body.querySelector('.ti-change');
+      if (changeBtn) {
+        changeBtn.addEventListener('click', () => {
+          panel.classList.remove('open');
+          document.querySelectorAll('.tool-card').forEach(c => c.classList.remove('selected'));
+          selectedTool = null;
+        });
+      }
+
+      // Wire generate
+      document.getElementById('btn-gen').addEventListener('click', () => {
+        generateAsset(form, costText);
+      });
+    }
+
+    // ── API endpoint mapping ──
+    const TOOL_API = {
+      'create-character':          { method: 'POST', path: 'create-character-with-8-directions' },
+      'create-8dir-sprite':        { method: 'POST', path: 'generate-8-rotations-v2' },
+      'create-map-object':         { method: 'POST', path: 'map-objects' },
+      'create-sm-image':           { method: 'POST', path: 'create-image-bitforge' },
+      'create-mxl-image':          { method: 'POST', path: 'create-image-pixflux' },
+      'create-image-pro':          { method: 'POST', path: 'generate-image-v2' },
+      'image-to-pixel-art':        { method: 'POST', path: 'image-to-pixelart' },
+      'create-from-style':         { method: 'POST', path: 'generate-with-style-v2' },
+      'create-ui-elements':        { method: 'POST', path: 'generate-ui-v2' },
+      'create-ui-experimental':    { method: 'POST', path: 'generate-ui-v2' },
+      'create-tiles-pro':          { method: 'POST', path: 'create-tiles-pro' },
+      'create-topdown-tileset':    { method: 'POST', path: 'create-tileset' },
+      'create-sidescroller-tileset': { method: 'POST', path: 'create-tileset-sidescroller' },
+      'create-isometric-tile':     { method: 'POST', path: 'create-isometric-tile' },
+      'animate-character':         { method: 'POST', path: 'animate-character' },
+      'animate-with-text':         { method: 'POST', path: 'animate-with-text' },
+      'interpolate':               { method: 'POST', path: 'interpolation-v2' },
+      'create-animated-object':    { method: 'POST', path: 'animate-with-text-v2' },
+      'animate-with-text-pro':     { method: 'POST', path: 'animate-with-text-v3' },
+      'edit-animation':            { method: 'POST', path: 'edit-animation-v2' },
+      'transfer-outfit':           { method: 'POST', path: 'transfer-outfit-v2' },
+      'interpolate-pro':           { method: 'POST', path: 'interpolation-v2' },
+      'image-to-image':            { method: 'POST', path: 'edit-image' },
+      'edit-image':                { method: 'POST', path: 'edit-image' },
+      'edit-image-pro':            { method: 'POST', path: 'edit-images-v2' },
+      'unzoom':                    { method: 'POST', path: 'resize' },
+      'remove-background':         { method: 'POST', path: 'remove-background' },
+      'pixel-art-correction':      { method: 'POST', path: 'resize' },
+    };
+
+    // Collect form values into a request body
+    function collectFormData(form) {
+      const body = {};
+      for (const f of form.fields) {
+        const el = document.getElementById('field-' + f.id);
+        if (!el) continue;
+        if (f.type === 'textarea' || f.type === 'text') {
+          if (el.value.trim()) body[f.id] = el.value.trim();
+        } else if (f.type === 'select') {
+          body[f.id] = el.value;
+        } else if (f.type === 'number') {
+          body[f.id] = Number(el.value);
+        } else if (f.type === 'range') {
+          body[f.id] = Number(el.value);
+        }
+      }
+      return body;
+    }
+
+    // Per-endpoint accepted fields (only send what the API accepts)
+    const API_FIELDS = {
+      'create-tiles-pro':            ['description', 'tile_size', 'n_tiles', 'tile_type', 'tile_view'],
+      'create-topdown-tileset':      ['lower_description', 'upper_description', 'tile_size'],
+      'create-sidescroller-tileset': ['description', 'tile_size'],
+      'create-isometric-tile':       ['description', 'tile_size'],
+      'create-map-object':           ['description', 'width', 'height'],
+      'create-character':            ['description', 'directions'],
+      'animate-character':           ['character_id', 'animation_type', 'frame_count', 'directions'],
+    };
+
+    // Build API-specific payload — only includes fields the endpoint accepts
+    function buildPayload(toolId, raw) {
+      const p = {};
+
+      // Map form fields to API field names
+      if (raw.prompt) p.description = raw.prompt;
+      if (raw.lower_prompt) p.lower_description = raw.lower_prompt;
+      if (raw.upper_prompt) p.upper_description = raw.upper_prompt;
+
+      // Tile size: "16px" → 16, "16x16" → 16
+      const tsRaw = raw.tile_size || raw.size;
+      if (tsRaw) {
+        const m = tsRaw.match(/(\d+)/);
+        if (m) p.tile_size = Number(m[1]);
+      }
+
+      // Dimensions
+      if (raw.width) p.width = raw.width;
+      if (raw.height) p.height = raw.height;
+
+      // Tile type → API value
+      if (raw.tile_type) {
+        const tt = raw.tile_type.toLowerCase();
+        if (tt.includes('iso')) p.tile_type = 'isometric';
+        else if (tt.includes('hex') && tt.includes('flat')) p.tile_type = 'hexagonal_flat';
+        else if (tt.includes('hex') && tt.includes('pointy')) p.tile_type = 'hexagonal_pointy';
+        else if (tt.includes('oct')) p.tile_type = 'octagonal';
+        else if (tt.includes('side')) p.tile_type = 'square_side';
+        else p.tile_type = 'square_topdown';
+      }
+
+      // View angle → tile_view string
+      if (raw.view_angle !== undefined) {
+        const a = Number(raw.view_angle);
+        if (a >= 80) p.tile_view = 'top-down';
+        else if (a >= 50) p.tile_view = 'low top-down';
+        else if (a >= 20) p.tile_view = 'high side';
+        else p.tile_view = 'side';
+      }
+
+      // Character specific
+      if (raw.character_id) p.character_id = raw.character_id;
+      if (raw.animation) p.animation_type = raw.animation;
+      if (raw.directions) p.directions = raw.directions.includes('8') ? 8 : 4;
+      if (raw.frames) p.frame_count = Number(raw.frames) || 6;
+      if (raw.frame_count) {
+        const m = raw.frame_count.match(/(\d+)/);
+        if (m) p.frame_count = Number(m[1]);
+      }
+      if (raw.strength !== undefined) p.strength = raw.strength / 100;
+
+      // Tiles Pro: n_tiles from form or default 16
+      if (toolId === 'create-tiles-pro') {
+        p.n_tiles = raw.n_tiles ? Number(raw.n_tiles) : 16;
+      }
+
+      // Wang tileset: tile_size must be an object {width, height}
+      if (toolId === 'create-topdown-tileset' || toolId === 'create-sidescroller-tileset') {
+        if (p.tile_size) {
+          p.tile_size = { width: p.tile_size, height: p.tile_size };
+        }
+      }
+
+      // Filter to only accepted fields for this endpoint
+      const allowed = API_FIELDS[toolId];
+      if (allowed) {
+        const filtered = {};
+        for (const key of allowed) {
+          if (p[key] !== undefined) filtered[key] = p[key];
+        }
+        return filtered;
+      }
+
+      return p;
+    }
+
+    // Poll async job until done
+    async function pollJob(jobId, resultEl, costText) {
+      const maxAttempts = 60;
+      for (let i = 0; i < maxAttempts; i++) {
+        await new Promise(r => setTimeout(r, 3000));
+        try {
+          const resp = await fetch(`/api/pixellab/background-jobs/${jobId}`);
+          const data = await resp.json();
+
+          if (data.status === 'completed' || data.status === 'done') {
+            return data;
+          } else if (data.status === 'failed' || data.status === 'error') {
+            throw new Error(data.error || data.last_response?.error || 'Job failed');
+          }
+          const pct = data.last_response?.progress;
+          const pctText = pct ? ` (${Math.round(pct * 100)}%)` : '';
+          resultEl.innerHTML = `<p style="color:var(--text-dim);font-size:12px;">Generating...${pctText}</p>`;
+        } catch (err) {
+          if (err.message === 'Job failed') throw err;
+        }
+      }
+      throw new Error('Generation timed out after 3 minutes');
+    }
+
+    async function generateAsset(form, costText) {
+      const btn = document.getElementById('btn-gen');
+      const resultEl = document.getElementById('gen-result');
+      const statusEl = document.getElementById('status-msg');
+
+      const api = TOOL_API[selectedTool];
+      if (!api) {
+        resultEl.innerHTML = '<p style="color:#f87171;font-size:12px;">No API mapping for this tool yet.</p>';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+      statusEl.textContent = 'Generating...';
+      resultEl.innerHTML = '<p style="color:var(--text-dim);font-size:12px;">Sending request...</p>';
+
+      try {
+        const raw = collectFormData(form);
+        const payload = buildPayload(selectedTool, raw);
+
+        const resp = await fetch(`/api/pixellab/${api.path}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok) {
+          throw new Error(data.error || data.detail || `API error ${resp.status}`);
+        }
+
+        // Check if async job
+        if (resp.status === 202 || data.job_id || data.background_job_id) {
+          const jobId = data.job_id || data.background_job_id || data.id;
+          resultEl.innerHTML = '<p style="color:var(--text-dim);font-size:12px;">Queued... polling for result</p>';
+          const result = await pollJob(jobId, resultEl, costText);
+          displayResult(result, resultEl);
+        } else {
+          displayResult(data, resultEl);
+        }
+
+        statusEl.textContent = 'Done';
+      } catch (err) {
+        resultEl.innerHTML = `<p style="color:#f87171;font-size:12px;">${err.message}</p>`;
+        statusEl.textContent = 'Error';
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Generate' + costText;
+    }
+
+    function displayResult(data, el) {
+      let html = '';
+
+      // Try to find images — check for RGBA bytes first, then URLs
+      const rgbaImgs = findRgbaImages(data);
+      const urlImgs = findImages(data);
+      const images = rgbaImgs.length > 0 ? rgbaImgs : urlImgs;
+      if (images.length > 0) {
+        html += '<div class="gallery-grid">';
+        for (const src of images) {
+          html += `<div class="gallery-item"><img src="${src}" alt="Generated"></div>`;
+        }
+        html += '</div>';
+      }
+
+      // Show usage info
+      if (data.usage) {
+        html += `<p style="color:var(--text-dim);font-size:11px;margin-top:8px;">Credits: ${data.usage.remaining_credits ?? '?'} remaining</p>`;
+      }
+
+      // Show IDs for future reference
+      if (data.id || data.character_id || data.tileset_id) {
+        const id = data.id || data.character_id || data.tileset_id;
+        html += `<p style="color:var(--text-dim);font-size:11px;margin-top:4px;">ID: <code style="color:var(--accent);user-select:all">${id}</code></p>`;
+      }
+
+      // Show raw JSON toggle
+      html += `<details style="margin-top:8px"><summary style="color:var(--text-dim);font-size:11px;cursor:pointer;">Raw response</summary>`;
+      html += `<pre style="font-size:10px;color:var(--text-dim);max-height:200px;overflow:auto;margin-top:4px;white-space:pre-wrap;">${JSON.stringify(data, null, 2)}</pre>`;
+      html += '</details>';
+
+      el.innerHTML = html;
+
+      // Make gallery items show in viewport
+      el.querySelectorAll('.gallery-item img').forEach(img => {
+        img.addEventListener('click', () => {
+          const vp = document.getElementById('viewport-canvas');
+          vp.innerHTML = `<img src="${img.src}" style="max-width:90%;max-height:90%;image-rendering:pixelated;border:1px solid var(--border);border-radius:8px;">`;
+        });
+      });
+    }
+
+    // Recursively find image URLs in API response
+    function findImages(obj, found = []) {
+      if (!obj || typeof obj !== 'object') return found;
+      for (const [key, val] of Object.entries(obj)) {
+        if (typeof val === 'string' && (val.startsWith('http') || val.startsWith('/')) &&
+            (val.includes('.png') || val.includes('.jpg') || val.includes('.webp') || val.includes('image'))) {
+          found.push(val);
+        } else if (typeof val === 'string' && key === 'image' && val.startsWith('data:')) {
+          found.push(val);
+        } else if (typeof val === 'object') {
+          findImages(val, found);
+        }
+      }
+      return found;
+    }
+
+    // Find rgba_bytes images in response and convert to data URLs
+    function findRgbaImages(obj) {
+      const results = [];
+      function walk(o) {
+        if (!o || typeof o !== 'object') return;
+        if (Array.isArray(o)) { o.forEach(walk); return; }
+        if (o.type === 'rgba_bytes' && o.base64 && o.width && o.height) {
+          results.push(rgbaToDataUrl(o.base64, o.width, o.height));
+          return;
+        }
+        Object.values(o).forEach(walk);
+      }
+      walk(obj);
+      return results;
+    }
+
+    // Convert base64 RGBA bytes to a canvas data URL
+    function rgbaToDataUrl(b64, w, h) {
+      const bytes = atob(b64);
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      const imgData = ctx.createImageData(w, h);
+      for (let i = 0; i < bytes.length; i++) {
+        imgData.data[i] = bytes.charCodeAt(i);
+      }
+      ctx.putImageData(imgData, 0, 0);
+      return canvas.toDataURL('image/png');
+    }
+
+    function handleFiles(dz, files) {
+      const id = dz.id.replace('dz-', '');
+      const thumbs = document.getElementById('thumbs-' + id);
+      for (const file of files) {
+        if (!file.type.startsWith('image/')) continue;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          thumbs.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    // Close right panel
+    document.getElementById('panel-close').addEventListener('click', () => {
+      document.getElementById('right-panel').classList.remove('open');
+      document.querySelectorAll('.tool-card').forEach(c => c.classList.remove('selected'));
+      selectedTool = null;
+    });
+
+    // Play button
+    document.getElementById('btn-play').addEventListener('click', () => {
+      window.location.href = '/test-game.html';
+    });
+
+    // Assets button (placeholder)
+    document.getElementById('btn-assets').addEventListener('click', () => {
+      window.location.href = '/tile-viewer.html';
+    });
+
+    // ══════════════════════════════════════════
+    // ── MAP PAINTER ──
+    // ══════════════════════════════════════════
+
+    const TERRAINS = [
+      { id: 0, name: 'Grass',       color: '#4a8c30' },
+      { id: 1, name: 'Grass Light', color: '#5ea83a' },
+      { id: 2, name: 'Dirt',        color: '#b8863c' },
+      { id: 3, name: 'Cobblestone', color: '#8a8a7a' },
+      { id: 4, name: 'Water',       color: '#2a6ab8' },
+      { id: 5, name: 'Sand',        color: '#d4b46a' },
+    ];
+
+    // Wang tile corners (same as map.js)
+    const WANG_CORNERS = [
+      [1,1,0,1],[0,1,1,0],[1,0,0,0],[1,1,0,0],
+      [1,0,1,0],[0,1,0,0],[0,0,0,0],[0,0,0,1],
+      [0,1,1,1],[0,0,1,1],[0,0,1,0],[1,0,0,1],
+      [1,1,1,1],[1,1,1,0],[0,1,0,1],[1,0,1,1],
+    ];
+    const WANG_LUT = {};
+    WANG_CORNERS.forEach(([ne,nw,sw,se], i) => { WANG_LUT[ne*8+nw*4+sw*2+se] = i; });
+
+    const MAP_TILESETS = [
+      { name: 'water-sand',        lower: 4, upper: 5 },
+      { name: 'sand-grass',        lower: 5, upper: 0 },
+      { name: 'grass-dirt',        lower: 0, upper: 2 },
+      { name: 'grass-cobblestone', lower: 0, upper: 3 },
+    ];
+    const TERRAIN_PRIO = { 4:0, 5:1, 0:2, 1:2, 2:3, 3:4 };
+    const PURE_TILE = {
+      4: { ts: 'water-sand',        idx: 6 },
+      5: { ts: 'water-sand',        idx: 12 },
+      0: { ts: 'sand-grass',        idx: 12 },
+      2: { ts: 'grass-dirt',        idx: 12 },
+      3: { ts: 'grass-cobblestone', idx: 12 },
+    };
+
+    const MAP_TILE_SIZE = 16;
+    const MAP_SCALE = 2; // render at 2x for visibility
+
+    let mapGrid = null;    // 2D array [y][x] of terrain IDs
+    let mapW = 60, mapH = 45;
+    let mapTileImages = {}; // tilesetName → { idx → ImageData }
+    let mapTilesLoaded = false;
+    let mapCanvas, mapCtx;
+    let mapPaintTerrain = 0;
+    let mapBrushSize = 3;
+    let mapTool = 'brush';
+    let mapPanning = false;
+    let mapPanStart = { x: 0, y: 0 };
+    let mapOffset = { x: 0, y: 0 };
+    let mapPainting = false;
+
+    // Load tileset images
+    async function loadMapTilesets() {
+      if (mapTilesLoaded) return;
+      for (const ts of MAP_TILESETS) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        await new Promise((res, rej) => {
+          img.onload = res;
+          img.onerror = rej;
+          img.src = `/assets/tilesets/${ts.name}.png`;
+        });
+        const tiles = {};
+        for (let i = 0; i < 16; i++) {
+          const col = i % 4, row = Math.floor(i / 4);
+          const c = document.createElement('canvas');
+          c.width = MAP_TILE_SIZE; c.height = MAP_TILE_SIZE;
+          const cx = c.getContext('2d');
+          cx.drawImage(img, col * MAP_TILE_SIZE, row * MAP_TILE_SIZE, MAP_TILE_SIZE, MAP_TILE_SIZE, 0, 0, MAP_TILE_SIZE, MAP_TILE_SIZE);
+          tiles[i] = c;
+        }
+        mapTileImages[ts.name] = tiles;
+      }
+      mapTilesLoaded = true;
+    }
+
+    // Create blank map
+    function createMap(w, h, fill = 0) {
+      mapW = w; mapH = h;
+      mapGrid = Array.from({ length: h }, () => Array(w).fill(fill));
+      mapOffset = { x: 0, y: 0 };
+    }
+
+    // Build vertex grid (same logic as map.js)
+    function buildVertices() {
+      const verts = Array.from({ length: mapH + 1 }, () => Array(mapW + 1).fill(0));
+      for (let vy = 0; vy <= mapH; vy++) {
+        for (let vx = 0; vx <= mapW; vx++) {
+          const neighbors = [];
+          if (vy > 0 && vx > 0) neighbors.push(mapGrid[vy-1][vx-1]);
+          if (vy > 0 && vx < mapW) neighbors.push(mapGrid[vy-1][vx]);
+          if (vy < mapH && vx > 0) neighbors.push(mapGrid[vy][vx-1]);
+          if (vy < mapH && vx < mapW) neighbors.push(mapGrid[vy][vx]);
+          // Highest priority wins
+          let best = neighbors[0] ?? 0;
+          for (const n of neighbors) {
+            if ((TERRAIN_PRIO[n] ?? 0) > (TERRAIN_PRIO[best] ?? 0)) best = n;
+          }
+          verts[vy][vx] = best === 1 ? 0 : best; // normalize grass_light
+        }
+      }
+      return verts;
+    }
+
+    // Get Wang tile for a cell
+    function getWangTile(verts, x, y) {
+      const ne = verts[y][x+1], nw = verts[y][x], sw = verts[y+1][x], se = verts[y+1][x+1];
+      const norm = t => t === 1 ? 0 : t;
+      const corners = [norm(ne), norm(nw), norm(sw), norm(se)];
+      const unique = [...new Set(corners)];
+
+      if (unique.length === 1) {
+        const t = unique[0];
+        const p = PURE_TILE[t];
+        return p ? { ts: p.ts, idx: p.idx } : null;
+      }
+
+      // Find matching tileset
+      for (const ts of MAP_TILESETS) {
+        const mapped = corners.map(c => {
+          if (c === ts.upper) return 1;
+          if (c === ts.lower) return 0;
+          return -1;
+        });
+        if (mapped.includes(-1)) continue;
+        const key = mapped[0]*8 + mapped[1]*4 + mapped[2]*2 + mapped[3];
+        const idx = WANG_LUT[key];
+        if (idx !== undefined) return { ts: ts.name, idx };
+      }
+      return null;
+    }
+
+    // Render the full map
+    function renderMap() {
+      if (!mapGrid || !mapCtx) return;
+      const s = MAP_TILE_SIZE * MAP_SCALE;
+      const cw = mapCanvas.width, ch = mapCanvas.height;
+      mapCtx.fillStyle = '#1a1b2e';
+      mapCtx.fillRect(0, 0, cw, ch);
+
+      const verts = buildVertices();
+      const ox = mapOffset.x, oy = mapOffset.y;
+
+      // Only render visible tiles
+      const startX = Math.max(0, Math.floor(-ox / s));
+      const startY = Math.max(0, Math.floor(-oy / s));
+      const endX = Math.min(mapW, Math.ceil((cw - ox) / s));
+      const endY = Math.min(mapH, Math.ceil((ch - oy) / s));
+
+      mapCtx.imageSmoothingEnabled = false;
+
+      for (let y = startY; y < endY; y++) {
+        for (let x = startX; x < endX; x++) {
+          const px = ox + x * s, py = oy + y * s;
+          const tile = getWangTile(verts, x, y);
+          if (tile && mapTileImages[tile.ts] && mapTileImages[tile.ts][tile.idx]) {
+            mapCtx.drawImage(mapTileImages[tile.ts][tile.idx], px, py, s, s);
+          } else {
+            // Fallback: solid color
+            const tid = mapGrid[y][x];
+            const t = TERRAINS.find(t => t.id === tid);
+            mapCtx.fillStyle = t ? t.color : '#333';
+            mapCtx.fillRect(px, py, s, s);
+          }
+        }
+      }
+
+      // Grid lines (subtle)
+      mapCtx.strokeStyle = 'rgba(255,255,255,0.06)';
+      mapCtx.lineWidth = 1;
+      for (let x = startX; x <= endX; x++) {
+        const px = ox + x * s;
+        mapCtx.beginPath(); mapCtx.moveTo(px, oy + startY * s); mapCtx.lineTo(px, oy + endY * s); mapCtx.stroke();
+      }
+      for (let y = startY; y <= endY; y++) {
+        const py = oy + y * s;
+        mapCtx.beginPath(); mapCtx.moveTo(ox + startX * s, py); mapCtx.lineTo(ox + endX * s, py); mapCtx.stroke();
+      }
+    }
+
+    // Paint terrain at map coords
+    function paintAt(mx, my) {
+      const s = MAP_TILE_SIZE * MAP_SCALE;
+      const tx = Math.floor((mx - mapOffset.x) / s);
+      const ty = Math.floor((my - mapOffset.y) / s);
+      const r = Math.floor(mapBrushSize / 2);
+      let changed = false;
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          const x = tx + dx, y = ty + dy;
+          if (x >= 0 && x < mapW && y >= 0 && y < mapH) {
+            const terrain = mapTool === 'eraser' ? 0 : mapPaintTerrain;
+            if (mapGrid[y][x] !== terrain) {
+              mapGrid[y][x] = terrain;
+              changed = true;
+            }
+          }
+        }
+      }
+      if (changed) renderMap();
+    }
+
+    // Flood fill
+    function floodFill(startX, startY, newTerrain) {
+      const s = MAP_TILE_SIZE * MAP_SCALE;
+      const tx = Math.floor((startX - mapOffset.x) / s);
+      const ty = Math.floor((startY - mapOffset.y) / s);
+      if (tx < 0 || tx >= mapW || ty < 0 || ty >= mapH) return;
+      const oldTerrain = mapGrid[ty][tx];
+      if (oldTerrain === newTerrain) return;
+      const stack = [[tx, ty]];
+      while (stack.length) {
+        const [x, y] = stack.pop();
+        if (x < 0 || x >= mapW || y < 0 || y >= mapH) continue;
+        if (mapGrid[y][x] !== oldTerrain) continue;
+        mapGrid[y][x] = newTerrain;
+        stack.push([x-1,y],[x+1,y],[x,y-1],[x,y+1]);
+      }
+      renderMap();
+    }
+
+    // Setup map painter
+    function initMapPainter() {
+      mapCanvas = document.getElementById('map-canvas');
+      mapCtx = mapCanvas.getContext('2d');
+
+      // Build terrain palette
+      const palette = document.getElementById('terrain-palette');
+      palette.innerHTML = '';
+      TERRAINS.forEach(t => {
+        const btn = document.createElement('button');
+        btn.className = 'terrain-btn' + (t.id === mapPaintTerrain ? ' active' : '');
+        btn.innerHTML = `<div class="terrain-swatch" style="background:${t.color}"></div>${t.name}`;
+        btn.addEventListener('click', () => {
+          palette.querySelectorAll('.terrain-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          mapPaintTerrain = t.id;
+        });
+        palette.appendChild(btn);
+      });
+
+      // Canvas sizing
+      function resizeCanvas() {
+        const vp = document.getElementById('viewport');
+        mapCanvas.width = vp.clientWidth;
+        mapCanvas.height = vp.clientHeight - 48; // minus topbar
+        renderMap();
+      }
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+
+      // Mouse events
+      mapCanvas.addEventListener('mousedown', (e) => {
+        if (e.button === 1 || (e.button === 0 && e.altKey)) {
+          // Middle click or alt+click = pan
+          mapPanning = true;
+          mapPanStart = { x: e.clientX - mapOffset.x, y: e.clientY - mapOffset.y };
+          mapCanvas.style.cursor = 'grabbing';
+          return;
+        }
+        if (e.button === 0) {
+          mapPainting = true;
+          if (mapTool === 'fill') {
+            floodFill(e.offsetX, e.offsetY, mapPaintTerrain);
+          } else {
+            paintAt(e.offsetX, e.offsetY);
+          }
+        }
+      });
+
+      mapCanvas.addEventListener('mousemove', (e) => {
+        if (mapPanning) {
+          mapOffset.x = e.clientX - mapPanStart.x;
+          mapOffset.y = e.clientY - mapPanStart.y;
+          renderMap();
+          return;
+        }
+        if (mapPainting && mapTool !== 'fill') {
+          paintAt(e.offsetX, e.offsetY);
+        }
+      });
+
+      window.addEventListener('mouseup', () => {
+        mapPanning = false;
+        mapPainting = false;
+        mapCanvas.style.cursor = 'crosshair';
+      });
+
+      // Mouse wheel zoom
+      mapCanvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+      }, { passive: false });
+
+      // Toolbar
+      document.querySelectorAll('.map-toolbar button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.map-toolbar button').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          mapTool = btn.dataset.tool;
+        });
+      });
+
+      // Brush size
+      document.getElementById('brush-size').addEventListener('change', (e) => {
+        mapBrushSize = Number(e.target.value);
+      });
+
+      // New map
+      document.getElementById('btn-new-map').addEventListener('click', () => {
+        const w = Number(document.getElementById('map-width').value) || 60;
+        const h = Number(document.getElementById('map-height').value) || 45;
+        createMap(w, h, 0);
+        mapOffset = { x: 20, y: 50 };
+        renderMap();
+      });
+
+      // Export
+      document.getElementById('btn-export-map').addEventListener('click', () => {
+        if (!mapGrid) return;
+        const data = {
+          width: mapW,
+          height: mapH,
+          tileSize: MAP_TILE_SIZE,
+          layers: { ground: mapGrid },
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'map.json';
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      // Create default map
+      createMap(mapW, mapH, 0);
+      mapOffset = { x: 20, y: 50 };
+    }
+
+    // Activate map painter when Map tab is selected
+    let mapInited = false;
+    const origTabHandler = document.querySelectorAll('.tab-btn');
+    origTabHandler.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const isMap = btn.dataset.tab === 'map';
+        document.getElementById('map-painter').classList.toggle('active', isMap);
+        document.getElementById('viewport-canvas').style.display = isMap ? 'none' : '';
+        // Hide right panel when on map tab
+        if (isMap) {
+          document.getElementById('right-panel').classList.remove('open');
+          if (!mapInited) {
+            mapInited = true;
+            document.getElementById('status-msg').textContent = 'Loading tilesets...';
+            await loadMapTilesets();
+            initMapPainter();
+            document.getElementById('status-msg').textContent = 'Map painter ready';
+            renderMap();
+          } else {
+            // Re-render on tab switch (canvas may have been resized)
+            setTimeout(() => {
+              const vp = document.getElementById('viewport');
+              mapCanvas.width = vp.clientWidth;
+              mapCanvas.height = vp.clientHeight - 48;
+              renderMap();
+            }, 50);
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>

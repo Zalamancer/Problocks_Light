@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grid Splitter Tool</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; font-family: system-ui, sans-serif; background: #111; color: #e0e0e0; }
+
+  .canvas-wrap {
+    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: repeating-conic-gradient(#1a1a2e 0% 25%, #151528 0% 50%) 0 0 / 16px 16px;
+    overflow: auto;
+  }
+  .canvas-inner { position: relative; display: inline-block; }
+  #canvas { display: block; image-rendering: pixelated; }
+  #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+
+  .toolbar {
+    position: fixed; top: 12px; left: 12px; right: 12px; z-index: 10;
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    background: rgba(20, 20, 40, 0.85); backdrop-filter: blur(10px);
+    padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+  .toolbar label { font-size: 0.8rem; white-space: nowrap; }
+  .toolbar input[type="file"] { font-size: 0.75rem; max-width: 160px; }
+  .toolbar input[type="number"] {
+    width: 50px; padding: 3px 6px; border: 1px solid #444; border-radius: 4px;
+    background: #2a2a3e; color: #e0e0e0; font-size: 0.8rem;
+  }
+  .toolbar select {
+    padding: 3px 6px; border: 1px solid #444; border-radius: 4px;
+    background: #2a2a3e; color: #e0e0e0; font-size: 0.8rem;
+  }
+  .toolbar input[type="color"] { width: 28px; height: 24px; border: 1px solid #444; border-radius: 4px; cursor: pointer; }
+  .toolbar input[type="range"] { width: 60px; }
+
+  button {
+    padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;
+    font-size: 0.75rem; font-weight: 600; transition: background 0.15s; white-space: nowrap;
+  }
+  .btn-primary { background: #4a6cf7; color: #fff; }
+  .btn-primary:hover { background: #3b5de7; }
+  .btn-split { background: #e0a030; color: #1a1a2e; }
+  .btn-split:hover { background: #d09020; }
+  .btn-chess { background: #30c080; color: #1a1a2e; }
+  .btn-chess:hover { background: #28a870; }
+
+  .info {
+    position: fixed; bottom: 12px; left: 12px; z-index: 10;
+    font-size: 0.75rem; color: #aaa;
+    background: rgba(20, 20, 40, 0.8); backdrop-filter: blur(8px);
+    padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .tiles-panel {
+    position: fixed; bottom: 12px; right: 12px; z-index: 10;
+    max-width: 400px; max-height: 50vh; overflow: auto;
+    background: rgba(20, 20, 40, 0.9); backdrop-filter: blur(10px);
+    padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+  .tiles-panel h2 { font-size: 0.9rem; margin-bottom: 8px; }
+  .tiles-grid {
+    display: flex; flex-wrap: wrap; gap: 3px;
+  }
+  .tile-cell {
+    display: flex; flex-direction: column; align-items: center; gap: 1px;
+    padding: 3px; border-radius: 4px; cursor: pointer; transition: background 0.15s;
+  }
+  .tile-cell:hover { background: rgba(255,255,255,0.1); }
+  .tile-cell img { image-rendering: pixelated; border: 1px solid #444; }
+  .tile-cell span { font-size: 0.6rem; color: #666; }
+  .download-all { margin-bottom: 8px; }
+  .tiles-close { position: absolute; top: 6px; right: 8px; background: none; border: none; color: #888; cursor: pointer; font-size: 1rem; }
+  .tiles-close:hover { color: #fff; }
+
+  .sep { width: 1px; height: 20px; background: rgba(255,255,255,0.12); flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <input type="file" id="fileInput" accept="image/*">
+  <div class="sep"></div>
+  <label>Tile:
+    <select id="tileSize">
+      <option value="16">16x16</option>
+      <option value="32" selected>32x32</option>
+      <option value="64">64x64</option>
+      <option value="128">128x128</option>
+      <option value="256">256x256</option>
+      <option value="custom">Custom</option>
+    </select>
+  </label>
+  <label id="customSizeLabel" style="display:none;">W: <input type="number" id="customW" value="32" min="1" max="2048"> H: <input type="number" id="customH" value="32" min="1" max="2048"></label>
+  <label>X: <input type="number" id="offsetX" value="0" min="0" max="2048"></label>
+  <label>Y: <input type="number" id="offsetY" value="0" min="0" max="2048"></label>
+  <div class="sep"></div>
+  <label><input type="color" id="gridColor" value="#ff0000"></label>
+  <label>W: <input type="number" id="lineWidth" value="1" min="1" max="20" step="1"></label>
+  <label><input type="range" id="lineOpacity" value="100" min="0" max="100"></label>
+  <div class="sep"></div>
+  <button class="btn-primary" id="drawBtn">Grid</button>
+  <button class="btn-chess" id="chessBtn">Tiles</button>
+  <button class="btn-split" id="splitBtn">Split</button>
+  <button class="btn-primary" id="saveBtn">Save</button>
+</div>
+
+<div class="canvas-wrap">
+  <div class="canvas-inner" id="canvasInner">
+    <canvas id="canvas"></canvas>
+    <canvas id="overlay"></canvas>
+  </div>
+</div>
+<div class="info" id="info"></div>
+
+<div class="tiles-panel" id="tilesOutput" style="display:none;">
+  <button class="tiles-close" id="tilesClose">&times;</button>
+  <h2>Tiles <span id="tileCount"></span></h2>
+  <button class="btn-primary download-all" id="downloadAll">Download All</button>
+  <div class="tiles-grid" id="tilesGrid"></div>
+</div>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const tileSizeSelect = document.getElementById('tileSize');
+const customW = document.getElementById('customW');
+const customH = document.getElementById('customH');
+const customSizeLabel = document.getElementById('customSizeLabel');
+const offsetXInput = document.getElementById('offsetX');
+const offsetYInput = document.getElementById('offsetY');
+const gridColor = document.getElementById('gridColor');
+const lineWidth = document.getElementById('lineWidth');
+const lineOpacity = document.getElementById('lineOpacity');
+const drawBtn = document.getElementById('drawBtn');
+const splitBtn = document.getElementById('splitBtn');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const overlay = document.getElementById('overlay');
+const oCtx = overlay.getContext('2d');
+const canvasInner = document.getElementById('canvasInner');
+const info = document.getElementById('info');
+const tilesOutput = document.getElementById('tilesOutput');
+const tilesGrid = document.getElementById('tilesGrid');
+const tileCount = document.getElementById('tileCount');
+const downloadAll = document.getElementById('downloadAll');
+
+let originalImg = null;
+let tiles = [];
+let displayScale = 1;
+
+function fitCanvas() {
+  if (!originalImg) return;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const iw = originalImg.naturalWidth;
+  const ih = originalImg.naturalHeight;
+  displayScale = Math.min(vw / iw, vh / ih);
+  const dw = Math.round(iw * displayScale);
+  const dh = Math.round(ih * displayScale);
+  canvas.style.width = dw + 'px';
+  canvas.style.height = dh + 'px';
+  overlay.width = dw;
+  overlay.height = dh;
+}
+window.addEventListener('resize', () => { fitCanvas(); drawGrid(); });
+
+document.getElementById('tilesClose').addEventListener('click', () => {
+  tilesOutput.style.display = 'none';
+});
+
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => {
+    originalImg = img;
+    fitCanvas();
+    drawGrid();
+  };
+  img.src = URL.createObjectURL(file);
+});
+
+tileSizeSelect.addEventListener('change', () => {
+  customSizeLabel.style.display = tileSizeSelect.value === 'custom' ? '' : 'none';
+  drawGrid();
+});
+customW.addEventListener('input', drawGrid);
+customH.addEventListener('input', drawGrid);
+offsetXInput.addEventListener('input', drawGrid);
+offsetYInput.addEventListener('input', drawGrid);
+gridColor.addEventListener('input', drawGrid);
+lineWidth.addEventListener('input', drawGrid);
+lineOpacity.addEventListener('input', drawGrid);
+drawBtn.addEventListener('click', drawGrid);
+splitBtn.addEventListener('click', splitTiles);
+document.getElementById('chessBtn').addEventListener('click', showChessboard);
+
+function getTileSize() {
+  if (tileSizeSelect.value === 'custom') {
+    return { w: parseInt(customW.value) || 32, h: parseInt(customH.value) || 32 };
+  }
+  const s = parseInt(tileSizeSelect.value);
+  return { w: s, h: s };
+}
+document.getElementById('saveBtn').addEventListener('click', () => {
+  if (!originalImg) return;
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = 'grid_image.png';
+  a.click();
+});
+
+function drawOverlay(cellW, cellH, ox, oy, chess) {
+  fitCanvas();
+  const w = overlay.width;
+  const h = overlay.height;
+  oCtx.clearRect(0, 0, w, h);
+
+  const sw = cellW * displayScale;
+  const sh = cellH * displayScale;
+  const sox = ox * displayScale;
+  const soy = oy * displayScale;
+
+  // Chessboard fill
+  if (chess) {
+    let r = 0;
+    for (let y = soy; y < h; y += sh, r++) {
+      let c = 0;
+      for (let x = sox; x < w; x += sw, c++) {
+        if ((r + c) % 2 === 1) {
+          oCtx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+          oCtx.fillRect(x, y, Math.min(sw, w - x), Math.min(sh, h - y));
+        }
+      }
+    }
+  }
+
+  // Grid lines
+  const opacity = parseInt(lineOpacity.value) / 100;
+  oCtx.globalAlpha = opacity;
+  oCtx.strokeStyle = gridColor.value;
+  oCtx.lineWidth = parseInt(lineWidth.value) || 1;
+
+  for (let x = sox; x <= w; x += sw) {
+    oCtx.beginPath();
+    oCtx.moveTo(Math.round(x) + 0.5, 0);
+    oCtx.lineTo(Math.round(x) + 0.5, h);
+    oCtx.stroke();
+  }
+  for (let y = soy; y <= h; y += sh) {
+    oCtx.beginPath();
+    oCtx.moveTo(0, Math.round(y) + 0.5);
+    oCtx.lineTo(w, Math.round(y) + 0.5);
+    oCtx.stroke();
+  }
+
+  oCtx.globalAlpha = 1;
+}
+
+function drawImage() {
+  canvas.width = originalImg.naturalWidth;
+  canvas.height = originalImg.naturalHeight;
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(originalImg, 0, 0);
+}
+
+function updateInfo(prefix, cellW, cellH, ox, oy) {
+  const cols = Math.ceil((originalImg.naturalWidth - ox) / cellW);
+  const rows = Math.ceil((originalImg.naturalHeight - oy) / cellH);
+  info.textContent = `${prefix} ${originalImg.naturalWidth}×${originalImg.naturalHeight}px | Tile: ${cellW}×${cellH}px | Offset: ${ox},${oy} | ${cols}×${rows} = ${cols * rows} tiles`;
+}
+
+function drawGrid() {
+  if (!originalImg) return;
+  const { w: cellW, h: cellH } = getTileSize();
+  const ox = parseInt(offsetXInput.value) || 0;
+  const oy = parseInt(offsetYInput.value) || 0;
+  drawImage();
+  drawOverlay(cellW, cellH, ox, oy, false);
+  updateInfo('Image:', cellW, cellH, ox, oy);
+}
+
+function showChessboard() {
+  if (!originalImg) return;
+  const { w: cellW, h: cellH } = getTileSize();
+  const ox = parseInt(offsetXInput.value) || 0;
+  const oy = parseInt(offsetYInput.value) || 0;
+  drawImage();
+  drawOverlay(cellW, cellH, ox, oy, true);
+  updateInfo('Chessboard:', cellW, cellH, ox, oy);
+}
+
+function splitTiles() {
+  if (!originalImg) return;
+  const { w: cellW, h: cellH } = getTileSize();
+  const ox = parseInt(offsetXInput.value) || 0;
+  const oy = parseInt(offsetYInput.value) || 0;
+
+  tiles = [];
+  tilesGrid.innerHTML = '';
+
+  const tmp = document.createElement('canvas');
+  const tCtx = tmp.getContext('2d');
+  tmp.width = cellW;
+  tmp.height = cellH;
+
+  let r = 0;
+  for (let y = oy; y < originalImg.naturalHeight; y += cellH, r++) {
+    let c = 0;
+    for (let x = ox; x < originalImg.naturalWidth; x += cellW, c++) {
+      const tw = Math.min(cellW, originalImg.naturalWidth - x);
+      const th = Math.min(cellH, originalImg.naturalHeight - y);
+      tCtx.clearRect(0, 0, tmp.width, tmp.height);
+      tCtx.imageSmoothingEnabled = false;
+      tCtx.drawImage(originalImg, x, y, tw, th, 0, 0, tw, th);
+      const dataUrl = tmp.toDataURL('image/png');
+      tiles.push({ dataUrl, name: `tile_${r}_${c}.png` });
+
+      const cell = document.createElement('div');
+      cell.className = 'tile-cell';
+      const img = document.createElement('img');
+      img.src = dataUrl;
+      const scale = Math.max(1, Math.min(4, 64 / Math.max(cellW, cellH)));
+      img.style.width = (cellW * scale) + 'px';
+      img.style.height = (cellH * scale) + 'px';
+      const label = document.createElement('span');
+      label.textContent = `${r},${c}`;
+      cell.appendChild(img);
+      cell.appendChild(label);
+      cell.addEventListener('click', () => downloadTile(dataUrl, `tile_${r}_${c}.png`));
+      tilesGrid.appendChild(cell);
+    }
+  }
+
+  tileCount.textContent = `(${tiles.length})`;
+  tilesOutput.style.display = 'block';
+}
+
+function downloadTile(dataUrl, name) {
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = name;
+  a.click();
+}
+
+downloadAll.addEventListener('click', async () => {
+  if (!tiles.length) return;
+  // Simple zip using no dependencies — just download individually in a folder-like naming
+  // For a proper zip we'd need a library, so we'll batch download
+  if (tiles.length <= 20) {
+    tiles.forEach((t, i) => setTimeout(() => downloadTile(t.dataUrl, t.name), i * 100));
+  } else {
+    // For many tiles, create a zip using compression stream
+    try {
+      await downloadAsZip(tiles);
+    } catch {
+      // Fallback: batch download
+      tiles.forEach((t, i) => setTimeout(() => downloadTile(t.dataUrl, t.name), i * 50));
+    }
+  }
+});
+
+async function downloadAsZip(tiles) {
+  // Minimal zip builder — no dependencies
+  const entries = [];
+  for (const tile of tiles) {
+    const resp = await fetch(tile.dataUrl);
+    const blob = await resp.arrayBuffer();
+    entries.push({ name: tile.name, data: new Uint8Array(blob) });
+  }
+
+  const zipParts = [];
+  const centralDir = [];
+  let offset = 0;
+
+  for (const entry of entries) {
+    const nameBytes = new TextEncoder().encode(entry.name);
+    // Local file header
+    const header = new Uint8Array(30 + nameBytes.length);
+    const hv = new DataView(header.buffer);
+    hv.setUint32(0, 0x04034b50, true); // sig
+    hv.setUint16(4, 20, true); // version
+    hv.setUint16(6, 0, true); // flags
+    hv.setUint16(8, 0, true); // compression (store)
+    hv.setUint16(10, 0, true); // mod time
+    hv.setUint16(12, 0, true); // mod date
+    hv.setUint32(14, crc32(entry.data), true);
+    hv.setUint32(18, entry.data.length, true); // compressed
+    hv.setUint32(22, entry.data.length, true); // uncompressed
+    hv.setUint16(26, nameBytes.length, true);
+    hv.setUint16(28, 0, true); // extra length
+    header.set(nameBytes, 30);
+
+    // Central dir entry
+    const cde = new Uint8Array(46 + nameBytes.length);
+    const cv = new DataView(cde.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true);
+    cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0, true);
+    cv.setUint16(10, 0, true);
+    cv.setUint16(12, 0, true);
+    cv.setUint16(14, 0, true);
+    cv.setUint32(16, crc32(entry.data), true);
+    cv.setUint32(20, entry.data.length, true);
+    cv.setUint32(24, entry.data.length, true);
+    cv.setUint16(28, nameBytes.length, true);
+    cv.setUint16(30, 0, true);
+    cv.setUint16(32, 0, true);
+    cv.setUint16(34, 0, true);
+    cv.setUint16(36, 0, true);
+    cv.setUint32(38, 0, true);
+    cv.setUint32(42, offset, true);
+    cde.set(nameBytes, 46);
+    centralDir.push(cde);
+
+    zipParts.push(header, entry.data);
+    offset += header.length + entry.data.length;
+  }
+
+  const cdOffset = offset;
+  let cdSize = 0;
+  for (const cde of centralDir) { zipParts.push(cde); cdSize += cde.length; }
+
+  // End of central dir
+  const eocd = new Uint8Array(22);
+  const ev = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(4, 0, true);
+  ev.setUint16(6, 0, true);
+  ev.setUint16(8, entries.length, true);
+  ev.setUint16(10, entries.length, true);
+  ev.setUint32(12, cdSize, true);
+  ev.setUint32(16, cdOffset, true);
+  ev.setUint16(20, 0, true);
+  zipParts.push(eocd);
+
+  const blob = new Blob(zipParts, { type: 'application/zip' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'tiles.zip';
+  a.click();
+}
+
+function crc32(data) {
+  let crc = 0xFFFFFFFF;
+  for (let i = 0; i < data.length; i++) {
+    crc ^= data[i];
+    for (let j = 0; j < 8; j++) crc = (crc >>> 1) ^ (crc & 1 ? 0xEDB88320 : 0);
+  }
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+</script>
+</body>
+</html>

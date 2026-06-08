@@ -168,38 +168,43 @@ function getWangTexture(wang, nw, ne, sw, se) {
     return wang.getTex(tsName, idx);
   }
 
-  // 3+ terrains at corners — fallback to procedural
-  return null;
+  // 3+ terrains at corners — fall back to pure tile of most common corner terrain
+  const counts = {};
+  corners.forEach(c => { counts[c] = (counts[c] || 0) + 1; });
+  const dominant = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+  const src = PURE_TILE_SOURCE[Number(dominant)];
+  return src ? wang.getTex(src.tileset, src.idx) : null;
 }
 
 // PixelLab object assets: objId -> { file, dir, scale, ox, oy }
+// Scale targets: trees ~3x4 tiles, buildings ~6x6, small objects ~1.5x1.5 tiles
 const PIXELLAB_OBJECTS = {
-  1:  { file: 'oak-tree.png',    dir: 'objects', scale: 0.25, ox: -16, oy: -80 },
-  2:  { file: 'pine-tree.png',   dir: 'objects', scale: 0.25, ox: -12, oy: -80 },
-  3:  { file: 'bush.png',        dir: 'objects', scale: 0.5,  ox: 0,   oy: 0 },
-  4:  { file: 'rock.png',        dir: 'objects', scale: 0.5,  ox: 0,   oy: 0 },
-  5:  { file: 'fence.png',       dir: 'objects', scale: 0.5,  ox: 0,   oy: 0 },
-  6:  { file: 'shop-a.png',      dir: 'objects', scale: 0.5,  ox: -24, oy: -48 },
-  7:  { file: 'shop-b.png',      dir: 'objects', scale: 0.5,  ox: -24, oy: -48 },
-  8:  { file: 'shop-c.png',      dir: 'objects', scale: 0.5,  ox: -24, oy: -48 },
-  9:  { file: 'farmhouse-a.png', dir: 'objects', scale: 0.5,  ox: -24, oy: -48 },
-  10: { file: 'farmhouse-b.png', dir: 'objects', scale: 0.5,  ox: -24, oy: -48 },
-  11: { file: 'barn-a.png',      dir: 'objects', scale: 0.5,  ox: -32, oy: -48 },
-  12: { file: 'barn-b.png',      dir: 'objects', scale: 0.5,  ox: -32, oy: -48 },
-  13: { file: 'cave-a.png',      dir: 'objects', scale: 0.5,  ox: -24, oy: -32 },
-  14: { file: 'cave-b.png',      dir: 'objects', scale: 0.5,  ox: -24, oy: -32 },
-  15: { file: 'dock-a.png',      dir: 'objects', scale: 0.5,  ox: -24, oy: -16 },
-  16: { file: 'dock-b.png',      dir: 'objects', scale: 0.5,  ox: -24, oy: -16 },
-  17: { file: 'bridge-h.png',    dir: 'objects', scale: 0.5,  ox: -8,  oy: 0 },
-  18: { file: 'bridge-v.png',    dir: 'objects', scale: 0.5,  ox: 0,   oy: -16 },
-  19: { file: 'flowers.png',     dir: 'objects', scale: 0.5,  ox: 0,   oy: 0 },
-  20: { file: 'tall-grass.png',  dir: 'tiles',   scale: 0.5,  ox: 0,   oy: 0 },
-  21: { file: 'sign.png',        dir: 'objects', scale: 0.5,  ox: -4,  oy: -16 },
-  22: { file: 'lamp.png',        dir: 'objects', scale: 0.5,  ox: -4,  oy: -16 },
-  23: { file: 'bench.png',       dir: 'objects', scale: 0.5,  ox: -4,  oy: 0 },
-  24: { file: 'barrel.png',      dir: 'objects', scale: 0.5,  ox: 0,   oy: 0 },
-  25: { file: 'well.png',        dir: 'objects', scale: 0.5,  ox: -4,  oy: -16 },
-  26: { file: 'mushroom.png',    dir: 'objects', scale: 0.5,  ox: 0,   oy: 0 },
+  1:  { file: 'oak-tree.png',    dir: 'objects', scale: 0.5,  ox: -16, oy: -48 },  // 96x128 → 48x64 = 3x4 tiles
+  2:  { file: 'pine-tree.png',   dir: 'objects', scale: 0.5,  ox: -12, oy: -48 },  // 80x128 → 40x64 = 2.5x4 tiles
+  3:  { file: 'bush.png',        dir: 'objects', scale: 0.75, ox: -4,  oy: -4 },   // 32x32 → 24x24 = 1.5x1.5 tiles
+  4:  { file: 'rock.png',        dir: 'objects', scale: 0.75, ox: -4,  oy: -4 },   // 32x32 → 24x24
+  5:  { file: 'fence.png',       dir: 'objects', scale: 0.75, ox: -4,  oy: -4 },   // 32x32 → 24x24
+  6:  { file: 'shop-a.png',      dir: 'objects', scale: 0.75, ox: -32, oy: -64 },  // 128x128 → 96x96 = 6x6 tiles
+  7:  { file: 'shop-b.png',      dir: 'objects', scale: 0.75, ox: -32, oy: -64 },
+  8:  { file: 'shop-c.png',      dir: 'objects', scale: 0.75, ox: -32, oy: -64 },
+  9:  { file: 'farmhouse-a.png', dir: 'objects', scale: 0.75, ox: -32, oy: -64 },
+  10: { file: 'farmhouse-b.png', dir: 'objects', scale: 0.75, ox: -32, oy: -64 },
+  11: { file: 'barn-a.png',      dir: 'objects', scale: 0.75, ox: -44, oy: -64 },  // 160x128 → 120x96 = 7.5x6 tiles
+  12: { file: 'barn-b.png',      dir: 'objects', scale: 0.75, ox: -44, oy: -64 },
+  13: { file: 'cave-a.png',      dir: 'objects', scale: 0.75, ox: -32, oy: -48 },  // 128x96 → 96x72 = 6x4.5 tiles
+  14: { file: 'cave-b.png',      dir: 'objects', scale: 0.75, ox: -32, oy: -48 },
+  15: { file: 'dock-a.png',      dir: 'objects', scale: 0.75, ox: -32, oy: -16 },  // 128x64 → 96x48 = 6x3 tiles
+  16: { file: 'dock-b.png',      dir: 'objects', scale: 0.75, ox: -32, oy: -16 },
+  17: { file: 'bridge-h.png',    dir: 'objects', scale: 1.0,  ox: -8,  oy: -4 },   // 64x32 → 64x32 = 4x2 tiles
+  18: { file: 'bridge-v.png',    dir: 'objects', scale: 1.0,  ox: -4,  oy: -16 },  // 32x64 → 32x64 = 2x4 tiles
+  19: { file: 'flowers.png',     dir: 'objects', scale: 0.75, ox: -4,  oy: -4 },   // 32x32 → 24x24
+  20: { file: 'tall-grass.png',  dir: 'tiles',   scale: 0.75, ox: -4,  oy: -4 },   // 32x32 → 24x24
+  21: { file: 'sign.png',        dir: 'objects', scale: 0.75, ox: -4,  oy: -20 },  // 32x48 → 24x36 = 1.5x2.25 tiles
+  22: { file: 'lamp.png',        dir: 'objects', scale: 0.75, ox: -4,  oy: -20 },  // 32x48 → 24x36
+  23: { file: 'bench.png',       dir: 'objects', scale: 0.75, ox: -8,  oy: -4 },   // 48x32 → 36x24 = 2.25x1.5 tiles
+  24: { file: 'barrel.png',      dir: 'objects', scale: 0.75, ox: -4,  oy: -4 },   // 32x32 → 24x24
+  25: { file: 'well.png',        dir: 'objects', scale: 0.75, ox: -4,  oy: -20 },  // 32x48 → 24x36
+  26: { file: 'mushroom.png',    dir: 'objects', scale: 0.75, ox: -4,  oy: -4 },   // 32x32 → 24x24
 };
 
 

@@ -90,9 +90,9 @@ export function generateTerrain(seed, w, h) {
       val = Math.max(0, Math.min(1, val));
 
       let terrain;
-      if (val < 0.25) terrain = TERRAIN.WATER;
-      else if (val < 0.35) terrain = TERRAIN.SAND;
-      else if (val < 0.75) terrain = TERRAIN.GRASS;
+      if (val < 0.20) terrain = TERRAIN.WATER;
+      else if (val < 0.45) terrain = TERRAIN.SAND;
+      else if (val < 0.93) terrain = TERRAIN.GRASS;
       else terrain = TERRAIN.DIRT;
 
       // Grass light variation (~15%)
@@ -105,7 +105,59 @@ export function generateTerrain(seed, w, h) {
     ground.push(row);
   }
 
+  // Post-process: enforce minimum 2-tile bands between non-adjacent terrain types
+  // Valid adjacencies: water↔sand, sand↔grass, grass↔dirt
+  // If water is within 2 tiles of grass, expand sand to fill the gap
+  // If sand is within 2 tiles of dirt, expand grass to fill the gap
+  enforceTerrainBands(ground, w, h);
+
   return ground;
+}
+
+// Enforce that terrain transitions always have at least 2 tiles of intermediate terrain.
+// Run multiple passes until stable.
+function enforceTerrainBands(ground, w, h) {
+  const norm = t => (t === TERRAIN.GRASS_LIGHT ? TERRAIN.GRASS : t);
+
+  for (let pass = 0; pass < 4; pass++) {
+    let changed = false;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const t = norm(ground[y][x]);
+        // Check all neighbors within 1 tile (cardinal + diagonal)
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            if (dx === 0 && dy === 0) continue;
+            const nx = x + dx, ny = y + dy;
+            if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+            const n = norm(ground[ny][nx]);
+            if (t === n) continue;
+
+            // Water next to grass/dirt → convert current tile to sand
+            if (t === TERRAIN.WATER && (n === TERRAIN.GRASS || n === TERRAIN.DIRT)) {
+              ground[ny][nx] = TERRAIN.SAND;
+              changed = true;
+            }
+            // Grass/dirt next to water → convert current tile to sand
+            if ((t === TERRAIN.GRASS || t === TERRAIN.DIRT) && n === TERRAIN.WATER) {
+              ground[y][x] = TERRAIN.SAND;
+              changed = true;
+            }
+            // Sand next to dirt → convert the sand to grass (dirt needs grass buffer)
+            if (t === TERRAIN.SAND && n === TERRAIN.DIRT) {
+              ground[y][x] = TERRAIN.GRASS;
+              changed = true;
+            }
+            if (t === TERRAIN.DIRT && n === TERRAIN.SAND) {
+              ground[ny][nx] = TERRAIN.GRASS;
+              changed = true;
+            }
+          }
+        }
+      }
+    }
+    if (!changed) break;
+  }
 }
 
 // --- Town Plaza Stamping ---

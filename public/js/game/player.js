@@ -1,9 +1,9 @@
 // Player using PixelLab sprite assets — smooth pixel movement with tile collision
 
 const SPRITE_BASE = '/assets/sprites/player';
-const SPRITE_SCALE = 2 / 3; // 48px canvas → 32px game space (2 tiles tall)
-const SPRITE_OFFSET_X = -8;  // center 32px sprite on 16px tile
-const SPRITE_OFFSET_Y = -16; // feet at bottom of tile, body extends above
+const SPRITE_SCALE = 0.85; // 48px canvas → ~41px game space (~2.5 tiles tall)
+const SPRITE_OFFSET_X = -12;  // center sprite on 16px tile
+const SPRITE_OFFSET_Y = -24; // feet at bottom of tile, body extends above
 
 const DIR_MAP = { up: 'north', down: 'south', left: 'west', right: 'east' };
 const WALK_DIRS = ['south', 'north', 'east', 'west'];

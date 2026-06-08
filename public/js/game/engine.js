@@ -28,6 +28,7 @@ class Game {
       return;
     }
 
+    PIXI.TextureSource.defaultOptions.scaleMode = 'nearest';
     this.app = new PIXI.Application();
     await this.app.init({
       resizeTo: document.getElementById('game-container'),
@@ -37,7 +38,7 @@ class Game {
     document.getElementById('game-container').appendChild(this.app.canvas);
     this.app.canvas.style.imageRendering = 'pixelated';
 
-    this.zoom = 3; // Stardew-style pixel zoom
+    this.zoom = 3; // pixel zoom — player ≈128px, tile ≈48px on screen
     // TODO: read seed from classroom config once schema supports it
     const seed = 42;
     const mapData = generateWorld(seed, 120, 90);
@@ -63,6 +64,7 @@ class Game {
     this.dialogue = new DialogueBox();
     this.hud = new HUD(this.profile);
     this.shop = new ShopUI(this);
+    this.initSettings();
 
     this.app.ticker.add((ticker) => this.update(ticker));
 
@@ -74,6 +76,78 @@ class Game {
       }
     });
     window.addEventListener('keyup', (e) => { this.keys[e.key.toLowerCase()] = false; });
+  }
+
+  setZoom(z) {
+    this.zoom = z;
+    this.world.scale.set(z);
+    this.centerCamera();
+  }
+
+  initSettings() {
+    // Settings gear button
+    const btn = document.createElement('button');
+    btn.id = 'settings-btn';
+    btn.innerHTML = '&#x2699;';
+    document.body.appendChild(btn);
+
+    // Settings panel
+    const panel = document.createElement('div');
+    panel.id = 'settings-panel';
+    panel.style.display = 'none';
+    panel.innerHTML = `
+      <div class="settings-header">Settings</div>
+      <label class="settings-row">
+        <span>Zoom</span>
+        <input type="range" id="setting-zoom" min="2" max="8" step="1" value="${this.zoom}">
+        <span id="zoom-val">${this.zoom}x</span>
+      </label>
+      <label class="settings-row">
+        <span>Seed</span>
+        <input type="number" id="setting-seed" value="42" min="0" max="99999">
+        <button id="seed-apply">Apply</button>
+      </label>
+      <button id="settings-close">Close</button>
+    `;
+    document.body.appendChild(panel);
+
+    // Toggle panel
+    btn.addEventListener('click', () => {
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    });
+
+    // Zoom slider
+    const zoomSlider = panel.querySelector('#setting-zoom');
+    const zoomVal = panel.querySelector('#zoom-val');
+    zoomSlider.addEventListener('input', () => {
+      const z = Number(zoomSlider.value);
+      zoomVal.textContent = z + 'x';
+      this.setZoom(z);
+    });
+
+    // Seed apply — regenerate world
+    const seedInput = panel.querySelector('#setting-seed');
+    panel.querySelector('#seed-apply').addEventListener('click', async () => {
+      const newSeed = Number(seedInput.value) || 0;
+      const mapData = generateWorld(newSeed, 120, 90);
+      this.map.container.removeChildren();
+      this.map.data = mapData;
+      this.map.render();
+      // Reposition NPCs
+      this.npcs.container.removeChildren();
+      this.npcs.npcs = mapData.npcs;
+      this.npcs.render();
+      this.map.container.addChild(this.npcs.container);
+      // Reposition player
+      this.player.setPosition(mapData.playerStart.x, mapData.playerStart.y);
+      this.map.container.addChild(this.player.sprite);
+      this.centerCamera();
+    });
+
+    // Close
+    panel.querySelector('#settings-close').addEventListener('click', () => {
+      panel.style.display = 'none';
+    });
   }
 
   update(ticker) {

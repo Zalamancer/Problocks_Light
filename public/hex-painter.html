@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hex Map Painter - Problocks Light</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { width:100%; height:100%; overflow:hidden; font-family:system-ui,sans-serif; background:#1a1a2e; color:#e0e0f0; }
+
+#app { display:flex; height:100%; }
+
+/* ── Sidebar ── */
+#sidebar {
+  width:240px; min-width:240px; background:#222340; border-right:1px solid #3a3b5c;
+  display:flex; flex-direction:column; overflow-y:auto; overflow-x:hidden;
+}
+.logo { padding:12px 14px; font-weight:700; font-size:15px; color:#6ee7b7; border-bottom:1px solid #3a3b5c; }
+.section { padding:10px 14px; border-bottom:1px solid #2a2b48; }
+.section-title { font-size:11px; font-weight:600; text-transform:uppercase; color:#8888aa; margin-bottom:8px; letter-spacing:.5px; }
+.section textarea {
+  width:100%; padding:6px 8px; border:1px solid #3a3b5c; border-radius:4px;
+  background:#2a2b48; color:#e0e0f0; font-size:12px; resize:vertical; min-height:50px;
+  font-family:inherit;
+}
+.form-row { display:flex; gap:6px; margin-top:6px; align-items:center; }
+.form-row label { font-size:11px; color:#8888aa; display:flex; align-items:center; gap:4px; white-space:nowrap; }
+.form-row input[type="number"] {
+  width:48px; padding:3px 5px; border:1px solid #3a3b5c; border-radius:3px;
+  background:#2a2b48; color:#e0e0f0; font-size:11px; text-align:center;
+}
+button {
+  padding:5px 10px; border:none; border-radius:4px; cursor:pointer;
+  font-size:11px; font-weight:600; transition:background .15s; white-space:nowrap;
+}
+.btn-accent { background:#6ee7b7; color:#1a1a2e; width:100%; margin-top:6px; padding:7px; }
+.btn-accent:hover { background:#5dd4a6; }
+.btn-accent:disabled { opacity:.5; cursor:wait; }
+.btn-dim { background:#2a2b48; color:#aaa; border:1px solid #3a3b5c; flex:1; }
+.btn-dim:hover { background:#33345a; color:#e0e0f0; }
+
+#gen-status { font-size:10px; color:#8888aa; margin-top:4px; min-height:14px; }
+
+/* Palette */
+#palette { display:flex; flex-wrap:wrap; gap:4px; min-height:32px; margin-bottom:6px; }
+.pal-tile {
+  width:44px; height:44px; border:2px solid transparent; border-radius:4px;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  background:#1a1a2e; position:relative;
+}
+.pal-tile.selected { border-color:#6ee7b7; }
+.pal-tile:hover { border-color:#555; }
+.pal-tile img { max-width:40px; max-height:40px; image-rendering:pixelated; }
+.pal-tile .del {
+  position:absolute; top:-4px; right:-4px; width:14px; height:14px;
+  background:#e74c3c; color:#fff; border-radius:50%; font-size:9px;
+  display:none; align-items:center; justify-content:center; cursor:pointer; line-height:1;
+}
+.pal-tile:hover .del { display:flex; }
+
+/* Tools */
+#tools { display:flex; gap:4px; flex-wrap:wrap; }
+.tool-btn {
+  flex:1; min-width:48px; padding:5px 4px; background:#2a2b48; color:#aaa;
+  border:1px solid #3a3b5c; font-size:10px; text-align:center;
+}
+.tool-btn.active { background:#6ee7b7; color:#1a1a2e; border-color:#6ee7b7; }
+.tool-btn:hover:not(.active) { background:#33345a; color:#e0e0f0; }
+
+.check-label { font-size:11px; color:#aaa; display:flex; align-items:center; gap:6px; margin-bottom:6px; cursor:pointer; }
+.check-label input { accent-color:#6ee7b7; }
+
+.help-text { font-size:9px; color:#555; line-height:1.4; margin-top:8px; }
+
+/* ── Canvas Area ── */
+#canvas-area { flex:1; position:relative; overflow:hidden; background:#2a3a1a; }
+#canvas {
+  width:100%; height:100%; display:block;
+  image-rendering:pixelated; image-rendering:crisp-edges;
+  cursor:crosshair;
+}
+#canvas.panning { cursor:grab; }
+
+#status {
+  position:absolute; bottom:0; left:0; right:0; height:24px;
+  background:rgba(26,26,46,.85); border-top:1px solid #2a2b48;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 12px; font-size:10px; color:#8888aa;
+}
+
+/* Block Viz Overlay */
+#block-viz-overlay {
+  display:none; position:fixed; inset:0; z-index:1000;
+  background:#111122;
+}
+#block-viz-overlay.open { display:block; }
+#block-viz-panel {
+  position:absolute; inset:0; padding:16px 24px 16px;
+  display:flex; flex-direction:column;
+}
+#block-viz-panel .viz-header {
+  display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;
+}
+#block-viz-panel h3 { margin:0; color:#6ee7b7; font-size:16px; }
+#block-viz-panel .close-btn {
+  background:#2a2b48; border:1px solid #3a3b5c; color:#aaa; font-size:12px;
+  cursor:pointer; padding:6px 14px; border-radius:4px;
+}
+#block-viz-panel .close-btn:hover { background:#33345a; color:#fff; }
+#block-viz-panel .viz-row { display:flex; gap:24px; height:calc(100vh - 130px); }
+#block-viz-canvas { background:#0a0a1a; border-radius:6px; border:1px solid #2a2b48; flex:1; }
+#block-viz-info {
+  font-size:13px; color:#c0c0d8; line-height:2; width:280px; min-width:280px;
+  overflow-y:auto; padding-right:8px;
+}
+#block-viz-info b { color:#6ee7b7; }
+#block-viz-panel .viz-controls {
+  display:flex; gap:16px; padding:12px 0 14px;
+  border-bottom:1px solid #3a3b5c; margin-bottom:12px; align-items:center;
+}
+#block-viz-panel .viz-controls .slider-group {
+  display:flex; align-items:center; gap:8px; flex:1; min-width:160px;
+}
+#block-viz-panel .viz-controls .slider-label {
+  font-size:13px; color:#c0c0d8; min-width:56px; text-align:right; font-weight:600;
+}
+#block-viz-panel .viz-controls .slider-val {
+  font-size:13px; color:#6ee7b7; min-width:40px; font-family:monospace; font-weight:700;
+}
+#block-viz-panel .viz-controls input[type="range"] {
+  flex:1; accent-color:#6ee7b7; cursor:pointer;
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <div class="logo">Hex Painter</div>
+
+    <div class="section">
+      <div class="section-title">Generate (PixelLab)</div>
+      <textarea id="gen-desc" rows="3" placeholder="1). grass hex&#10;2). stone hex&#10;3). water hex"></textarea>
+      <div class="form-row">
+        <label>Tiles <input id="gen-count" type="number" value="4" min="1" max="16"></label>
+        <label>Size <input id="gen-size" type="number" value="32" min="16" max="256"></label>
+      </div>
+      <div class="form-row">
+        <label>Angle <input id="gen-angle" type="number" value="70" min="0" max="90"></label>
+        <label>Depth% <input id="gen-depth" type="number" value="100" min="0" max="100"></label>
+      </div>
+      <button id="gen-btn" class="btn-accent">Generate</button>
+      <div id="gen-status"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Palette</div>
+      <div id="palette"></div>
+      <div class="form-row">
+        <button id="upload-btn" class="btn-dim">Upload</button>
+        <button id="upload-sheet" class="btn-dim">Sheet</button>
+        <button id="clear-pal" class="btn-dim">Clear</button>
+      </div>
+      <div class="form-row">
+        <label>Cols <input id="sheet-cols" type="number" value="4" min="1" max="32"></label>
+        <label>Rows <input id="sheet-rows" type="number" value="4" min="1" max="32"></label>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Tools</div>
+      <div id="tools">
+        <button class="tool-btn active" data-tool="paint">Paint</button>
+        <button class="tool-btn" data-tool="erase">Erase</button>
+        <button class="tool-btn" data-tool="fill">Fill</button>
+        <button class="tool-btn" data-tool="pick">Pick</button>
+        <button class="tool-btn" data-tool="raise">Raise</button>
+        <button class="tool-btn" data-tool="lower">Lower</button>
+      </div>
+      <div class="form-row" style="margin-top:8px">
+        <label>Size <input id="brush-size" type="number" value="8" min="1" max="256"></label>
+        <label style="margin-left:4px">
+          <select id="brush-shape" style="padding:3px 4px;border:1px solid #3a3b5c;border-radius:3px;background:#2a2b48;color:#e0e0f0;font-size:11px;">
+            <option value="hex">Hex</option>
+            <option value="ring">Ring</option>
+            <option value="random">Scatter</option>
+          </select>
+        </label>
+      </div>
+      <div style="display:flex;gap:3px;margin-top:4px;flex-wrap:wrap;" id="brush-presets">
+        <button class="btn-dim" style="padding:2px 5px;font-size:10px;" data-bs="8">8</button>
+        <button class="btn-dim" style="padding:2px 5px;font-size:10px;" data-bs="16">16</button>
+        <button class="btn-dim" style="padding:2px 5px;font-size:10px;" data-bs="32">32</button>
+        <button class="btn-dim" style="padding:2px 5px;font-size:10px;" data-bs="64">64</button>
+        <button class="btn-dim" style="padding:2px 5px;font-size:10px;" data-bs="128">128</button>
+        <button class="btn-dim" style="padding:2px 5px;font-size:10px;" data-bs="256">256</button>
+      </div>
+      <div id="brush-preview" style="font-size:10px;color:#555;margin-top:4px;">8 hexes</div>
+    </div>
+
+    <div class="section">
+      <label class="check-label"><input type="checkbox" id="show-grid"> Show grid</label>
+      <label class="check-label"><input type="checkbox" id="show-coords"> Show coords</label>
+      <label class="check-label"><input type="checkbox" id="clip-hex"> Clip to hex (hide thickness)</label>
+      <div class="form-row">
+        <label>Tile zoom <input id="clip-zoom" type="range" min="-50" max="50" value="0" step="1" style="width:80px;accent-color:#6ee7b7;"></label>
+        <span id="clip-zoom-val" style="font-size:10px;color:#888;min-width:30px">0%</span>
+      </div>
+      <label class="check-label"><input type="checkbox" id="random-rotate"> Random rotation</label>
+      <label class="check-label"><input type="checkbox" id="random-flip"> Random flip</label>
+      <label class="check-label"><input type="checkbox" id="random-palette"> Random palette</label>
+      <label class="check-label"><input type="checkbox" id="random-brush"> Random brush size</label>
+      <div class="form-row">
+        <label>Y-off <input id="y-offset" type="number" value="0" min="-32" max="32"></label>
+      </div>
+      <div class="form-row">
+        <button id="regen-flat" class="btn-dim">Regen Flat</button>
+        <button id="block-viz-btn" class="btn-dim">Block Viz</button>
+      </div>
+      <div class="form-row" style="margin-top:8px">
+        <input id="map-name" type="text" placeholder="Map name..." style="flex:2;padding:4px 6px;border:1px solid #3a3b5c;border-radius:3px;background:#2a2b48;color:#e0e0f0;font-size:11px;">
+      </div>
+      <div class="form-row">
+        <button id="save-map" class="btn-accent" style="flex:2">Save Map</button>
+        <button id="export-png" class="btn-dim">PNG</button>
+      </div>
+      <div class="form-row">
+        <button id="export-json" class="btn-dim">JSON</button>
+        <button id="import-json" class="btn-dim">Load</button>
+      </div>
+      <div id="save-status" style="font-size:10px;color:#6ee7b7;margin-top:2px;"></div>
+      <div class="form-row">
+        <button id="clear-map" class="btn-dim" style="flex:1;color:#e74c3c">Clear Map</button>
+      </div>
+      <div class="help-text">
+        Scroll = zoom &bull; Shift+drag / middle = pan<br>
+        Right-click = erase &bull; 1-4 = tools<br>
+        [ ] = brush size &bull; Space+drag = pan
+      </div>
+    </div>
+  </div>
+
+  <div id="canvas-area">
+    <canvas id="canvas"></canvas>
+    <div id="status">
+      <span id="coord-display">--</span>
+      <span id="zoom-display">3.0x</span>
+    </div>
+  </div>
+</div>
+
+<div id="block-viz-overlay">
+  <div id="block-viz-panel">
+    <div class="viz-header">
+      <h3>Block Visualizer</h3>
+      <button class="close-btn" id="block-viz-close">Close (Esc)</button>
+    </div>
+    <div class="viz-controls">
+      <div class="slider-group">
+        <span class="slider-label">Size</span>
+        <input id="viz-size" type="range" min="8" max="128" value="32">
+        <span class="slider-val" id="viz-size-val">32</span>
+      </div>
+      <div class="slider-group">
+        <span class="slider-label">Angle</span>
+        <input id="viz-angle" type="range" min="1" max="90" value="70">
+        <span class="slider-val" id="viz-angle-val">70°</span>
+      </div>
+      <div class="slider-group">
+        <span class="slider-label">Depth%</span>
+        <input id="viz-depth" type="range" min="0" max="200" value="100">
+        <span class="slider-val" id="viz-depth-val">100</span>
+      </div>
+    </div>
+    <div class="viz-row">
+      <canvas id="block-viz-canvas"></canvas>
+      <div id="block-viz-info"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+const S3 = Math.sqrt(3);
+let hexR = 16;           // circumradius = tile_size / 2
+let viewAngle = 70;      // tile view angle in degrees (from horizontal)
+let yScale = Math.sin(70 * Math.PI / 180); // always from viewAngle — grid layout never changes
+let pal = [];            // [{id, name, img:Image, dataUrl}]
+let selTile = -1;        // selected palette index
+let map = {};            // "q,r" → palette index (or array for stacks)
+let rotMap = {};         // "q,r" → rotation in radians
+let flipMap = {};        // "q,r" → true if horizontally flipped
+let heightMap = {};      // "q,r" → stack height (default 1)
+let randomRotate = false;
+let randomFlip = false;
+let randomBrush = false;
+let randomPalette = false;
+let tool = 'paint';
+let cam = { x: 0, y: 0, zoom: 3 };
+let hover = null;        // {q,r}
+let showGrid = false;
+let showCoords = false;
+let clipHex = false;
+let clipZoom = 0;        // 0 = no zoom, positive = zoom in, negative = zoom out
+let yOff = 0;            // depth Y offset
+let isDrawing = false;
+let heightEdited = new Set(); // tracks hexes already raised/lowered in current drag
+let isPanning = false;
+let panLast = { x: 0, y: 0 };
+let spaceHeld = false;
+let palIdCounter = 0;
+let brushSize = 8;        // radius in hex rings
+let brushShape = 'hex';   // 'hex' | 'ring' | 'random'
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+// ═══════════════════════════════════════════
+// HEX MATH (flat-top, axial coordinates)
+// ═══════════════════════════════════════════
+function hexToPixel(q, r) {
+  return { x: hexR * 1.5 * q, y: hexR * yScale * (S3/2 * q + S3 * r) };
+}
+
+function pixelToHex(wx, wy) {
+  const fq = (2/3 * wx) / hexR;
+  const fr = (-1/3 * wx + S3/3 * (wy / yScale)) / hexR;
+  return hexRound(fq, fr);
+}
+
+function hexRound(fq, fr) {
+  const fs = -fq - fr;
+  let q = Math.round(fq), r = Math.round(fr), s = Math.round(fs);
+  const dq = Math.abs(q - fq), dr = Math.abs(r - fr), ds = Math.abs(s - fs);
+  if (dq > dr && dq > ds) q = -r - s;
+  else if (dr > ds) r = -q - s;
+  return { q, r };
+}
+
+function hk(q, r) { return `${q},${r}`; }
+
+function hexNeighbors(q, r) {
+  return [{q:q+1,r},{q:q-1,r},{q,r:r+1},{q,r:r-1},{q:q+1,r:r-1},{q:q-1,r:r+1}];
+}
+
+function getHexesInBrush(cq, cr) {
+  if (brushSize <= 1) return [{q:cq, r:cr}];
+  const rad = brushSize - 1;
+  const all = [];
+  for (let dq = -rad; dq <= rad; dq++) {
+    for (let dr = Math.max(-rad, -dq-rad); dr <= Math.min(rad, -dq+rad); dr++) {
+      all.push({q: cq+dq, r: cr+dr});
+    }
+  }
+  if (brushShape === 'ring') {
+    // Only the outermost ring
+    return all.filter(h => {
+      const dist = Math.max(Math.abs(h.q-cq), Math.abs(h.r-cr), Math.abs(-h.q-h.r+cq+cr));
+      return dist === rad;
+    });
+  }
+  if (brushShape === 'random') {
+    // ~40% random scatter from the full area
+    return all.filter(() => Math.random() < 0.4);
+  }
+  return all; // hex = filled hexagonal area
+}
+
+function drawHexPath(cx, cy, r, ys) {
+  const s = ys ?? yScale;
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI/3 * i;
+    const x = cx + r * Math.cos(a), y = cy + r * Math.sin(a) * s;
+    i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+}
+
+// ═══════════════════════════════════════════
+// CAMERA
+// ═══════════════════════════════════════════
+function screenToWorld(sx, sy) {
+  const rect = canvas.getBoundingClientRect();
+  const cx = (sx - rect.left) * (canvas.width / rect.width);
+  const cy = (sy - rect.top) * (canvas.height / rect.height);
+  return { x: (cx - canvas.width/2) / cam.zoom + cam.x, y: (cy - canvas.height/2) / cam.zoom + cam.y };
+}
+
+function canvasCoords(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) * (canvas.width / rect.width), y: (e.clientY - rect.top) * (canvas.height / rect.height) };
+}
+
+// ═══════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════
+let rafId = 0;
+function scheduleRender() { cancelAnimationFrame(rafId); rafId = requestAnimationFrame(render); }
+
+function getVisibleHexes() {
+  const hw = canvas.width/2/cam.zoom, hh = canvas.height/2/cam.zoom;
+  const pad = hexR * 4;
+  const x0 = cam.x - hw - pad, y0 = cam.y - hh - pad;
+  const x1 = cam.x + hw + pad, y1 = cam.y + hh + pad;
+  const qMin = Math.floor(x0 / (1.5*hexR)) - 1, qMax = Math.ceil(x1 / (1.5*hexR)) + 1;
+  const out = [];
+  const ys = hexR * yScale;
+  for (let q = qMin; q <= qMax; q++) {
+    const qy = S3/2 * ys * q;
+    const rMin = Math.floor((y0 - qy) / (S3*ys)) - 1;
+    const rMax = Math.ceil((y1 - qy) / (S3*ys)) + 1;
+    for (let r = rMin; r <= rMax; r++) out.push({q,r});
+  }
+  return out;
+}
+
+function render() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.save();
+  ctx.translate(W/2, H/2);
+  ctx.scale(cam.zoom, cam.zoom);
+  ctx.translate(-cam.x, -cam.y);
+  ctx.imageSmoothingEnabled = false;
+
+  const hexes = getVisibleHexes();
+
+  // Origin marker
+  const op = hexToPixel(0,0);
+  drawHexPath(op.x, op.y, hexR);
+  ctx.fillStyle = 'rgba(110,231,183,0.04)';
+  ctx.fill();
+
+  // Tiles (sorted back→front)
+  const painted = [];
+  for (const h of hexes) { if (map[hk(h.q,h.r)] !== undefined) painted.push(h); }
+  painted.sort((a,b) => {
+    const pa = hexToPixel(a.q,a.r), pb = hexToPixel(b.q,b.r);
+    return (pa.y - pb.y) || (pa.x - pb.x);
+  });
+
+  const tileSize = hexR * 2; // grid cell size — all tiles scale to this
+  const baseFaceH = Math.round(tileSize * S3/2 * yScale);
+
+  // Calculate block depth (vertical offset per stack level)
+  const cosA = Math.cos(viewAngle * Math.PI / 180);
+  const blockDepth = Math.round(tileSize * (1 - S3/2 * yScale)); // thickness portion of tile
+
+  // Find max height for layered rendering (bottom layers first)
+  let maxH = 1;
+  for (const h of painted) { const ht = heightMap[hk(h.q,h.r)] || 1; if (ht > maxH) maxH = ht; }
+
+  // Render layer by layer (bottom to top) so upper blocks overlap lower
+  for (let layer = 0; layer < maxH; layer++) {
+    for (const h of painted) {
+      const k = hk(h.q, h.r);
+      const stackH = heightMap[k] || 1;
+      if (layer >= stackH) continue; // this hex doesn't have this many layers
+
+      const tile = pal[map[k]];
+      if (!tile?.img) continue;
+      const p = hexToPixel(h.q, h.r);
+      const img = tile.img;
+      const srcTopH = img.width * S3/2;
+      const faceH = baseFaceH;
+      const rot = rotMap[k] || 0;
+      const flip = flipMap[k] || false;
+      const needsTransform = rot || flip;
+
+      // Stack offset: each layer moves up by blockDepth
+      const stackOffset = layer * blockDepth;
+
+      const isTopBlock = (layer === stackH - 1);
+
+      if (clipHex && isTopBlock) {
+        // Top block clipped to hex (flat top view)
+        const zoomFrac = clipZoom / 100;
+        const inset = Math.round(img.width * zoomFrac);
+        const insetY = Math.round(srcTopH * zoomFrac);
+        const srcW = img.width - inset * 2;
+        const srcFaceH = Math.round(srcTopH - insetY * 2);
+        ctx.save();
+        drawHexPath(p.x, p.y - stackOffset, hexR);
+        ctx.clip();
+        if (needsTransform) {
+          ctx.translate(p.x, p.y - stackOffset);
+          if (flip) ctx.scale(-1, 1);
+          if (rot) ctx.rotate(rot);
+          ctx.drawImage(img, inset, insetY, srcW, srcFaceH,
+            -tileSize/2, -faceH/2, tileSize, faceH);
+        } else {
+          ctx.drawImage(img, inset, insetY, srcW, srcFaceH,
+            p.x - tileSize/2, p.y - stackOffset - faceH/2, tileSize, faceH);
+        }
+        ctx.restore();
+      } else {
+        // Full block with depth visible
+        const srcThickness = img.height - srcTopH;
+        const visibleThickness = srcThickness * cosA;
+        const srcH = Math.round(srcTopH + srcThickness);
+        const drawH = Math.round(faceH + visibleThickness * (tileSize / img.width) * yScale);
+        if (needsTransform) {
+          ctx.save();
+          ctx.translate(p.x, p.y - stackOffset - faceH/2 + yOff + drawH/2);
+          if (flip) ctx.scale(-1, 1);
+          if (rot) ctx.rotate(rot);
+          ctx.drawImage(img, 0, 0, img.width, srcH,
+            -tileSize/2, -drawH/2, tileSize, drawH);
+          ctx.restore();
+        } else {
+          ctx.drawImage(img, 0, 0, img.width, srcH,
+            p.x - tileSize/2, p.y - stackOffset - faceH/2 + yOff, tileSize, drawH);
+        }
+      }
+    }
+  }
+
+  // Grid
+  if (showGrid && cam.zoom > 0.3) {
+    const a = Math.min(1, (cam.zoom - 0.3) * 1.5);
+    ctx.strokeStyle = `rgba(255,255,255,${(0.15*a).toFixed(3)})`;
+    ctx.lineWidth = 1/cam.zoom;
+    for (const h of hexes) {
+      const p = hexToPixel(h.q, h.r);
+      drawHexPath(p.x, p.y, hexR);
+      ctx.stroke();
+    }
+  }
+
+  // Coordinate labels
+  if (showCoords && cam.zoom > 1.5) {
+    const fa = Math.min(1, (cam.zoom - 1.5) * 1.5);
+    ctx.fillStyle = `rgba(136,136,170,${(0.6*fa).toFixed(3)})`;
+    ctx.font = `${Math.max(6, 8/cam.zoom)}px monospace`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (const h of hexes) {
+      const p = hexToPixel(h.q, h.r);
+      ctx.fillText(`${h.q},${h.r}`, p.x, p.y);
+    }
+  }
+
+  // Hover — show ghost tile on top of existing stack
+  if (hover) {
+    const brushHexes = getHexesInBrush(hover.q, hover.r);
+    const isErase = tool === 'erase';
+    const isPaintLike = (tool === 'paint' || tool === 'raise') && selTile >= 0 && pal[selTile]?.img;
+
+    if (isPaintLike) {
+      ctx.globalAlpha = 0.5;
+      for (const bh of brushHexes) {
+        const bk = hk(bh.q, bh.r);
+        const bp = hexToPixel(bh.q, bh.r);
+        const img = pal[selTile].img;
+        const srcTopH = img.width * S3/2;
+        const faceH = baseFaceH;
+        // Position ghost on top of existing stack
+        const stackH = heightMap[bk] || 1;
+        const existingOffset = map[bk] !== undefined ? (tool === 'raise' ? stackH : (stackH - 1)) * blockDepth : 0;
+
+        if (clipHex) {
+          const zoomFrac = clipZoom / 100;
+          const inset = Math.round(img.width * zoomFrac);
+          const insetY = Math.round(srcTopH * zoomFrac);
+          const srcW = img.width - inset * 2;
+          const srcFaceH = Math.round(srcTopH - insetY * 2);
+          ctx.save();
+          drawHexPath(bp.x, bp.y - existingOffset, hexR);
+          ctx.clip();
+          ctx.drawImage(img, inset, insetY, srcW, srcFaceH,
+            bp.x - tileSize/2, bp.y - existingOffset - faceH/2, tileSize, faceH);
+          ctx.restore();
+          ctx.globalAlpha = 0.5;
+        } else {
+          const srcThickness = img.height - srcTopH;
+          const visibleThickness = srcThickness * cosA;
+          const srcH = Math.round(srcTopH + srcThickness);
+          const drawH = Math.round(faceH + visibleThickness * (tileSize / img.width) * yScale);
+          ctx.drawImage(img, 0, 0, img.width, srcH,
+            bp.x - tileSize/2, bp.y - existingOffset - faceH/2 + yOff, tileSize, drawH);
+        }
+      }
+      ctx.globalAlpha = 1;
+    } else if (isErase || tool === 'lower') {
+      // Show subtle red/yellow tint on affected hexes
+      ctx.globalAlpha = 0.2;
+      ctx.fillStyle = isErase ? 'rgba(231,76,60,0.5)' : 'rgba(231,196,60,0.5)';
+      for (const bh of brushHexes) {
+        const bk = hk(bh.q, bh.r);
+        if (map[bk] === undefined) continue;
+        const bp = hexToPixel(bh.q, bh.r);
+        const stackH = heightMap[bk] || 1;
+        const topOffset = (stackH - 1) * blockDepth;
+        drawHexPath(bp.x, bp.y - topOffset, hexR);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════
+// INPUT
+// ═══════════════════════════════════════════
+function updateHover(e) {
+  const w = screenToWorld(e.clientX, e.clientY);
+  hover = pixelToHex(w.x, w.y);
+  const ht = heightMap[hk(hover.q, hover.r)] || 1;
+  const hasBlock = map[hk(hover.q, hover.r)] !== undefined;
+  document.getElementById('coord-display').textContent = `q:${hover.q} r:${hover.r}${hasBlock ? ' h:'+ht : ''}`;
+  scheduleRender();
+}
+
+function applyTool(h) {
+  if (!h) return;
+  // Randomize brush size per stroke if enabled
+  if (randomBrush) {
+    brushSize = Math.floor(Math.random() * parseInt(document.getElementById('brush-size').value)) + 1;
+  }
+  if (tool === 'paint') {
+    if (selTile < 0 && !randomPalette) return;
+    for (const bh of getHexesInBrush(h.q, h.r)) {
+      const k = hk(bh.q, bh.r);
+      const tileIdx = randomPalette ? Math.floor(Math.random() * pal.length) : selTile;
+      if (tileIdx < 0 || tileIdx >= pal.length) continue;
+      map[k] = tileIdx;
+      rotMap[k] = randomRotate ? Math.floor(Math.random() * 6) * (Math.PI / 3) : 0;
+      flipMap[k] = randomFlip ? Math.random() < 0.5 : false;
+    }
+  } else if (tool === 'erase') {
+    for (const bh of getHexesInBrush(h.q, h.r)) { const k = hk(bh.q, bh.r); delete map[k]; delete rotMap[k]; delete flipMap[k]; delete heightMap[k]; }
+  } else if (tool === 'fill') {
+    if (selTile < 0) return;
+    floodFill(h.q, h.r, selTile);
+  } else if (tool === 'pick') {
+    const idx = map[key];
+    if (idx !== undefined) { selTile = idx; renderPalette(); }
+  } else if (tool === 'raise') {
+    for (const bh of getHexesInBrush(h.q, h.r)) {
+      const k = hk(bh.q, bh.r);
+      if (map[k] === undefined || heightEdited.has(k)) continue;
+      heightMap[k] = (heightMap[k] || 1) + 1;
+      heightEdited.add(k);
+    }
+  } else if (tool === 'lower') {
+    for (const bh of getHexesInBrush(h.q, h.r)) {
+      const k = hk(bh.q, bh.r);
+      if (map[k] === undefined || heightEdited.has(k)) continue;
+      heightMap[k] = Math.max(1, (heightMap[k] || 1) - 1);
+      heightEdited.add(k);
+    }
+  }
+  scheduleRender();
+}
+
+function floodFill(sq, sr, tileIdx) {
+  const MAX = 500;
+  const target = map[hk(sq,sr)] ?? -1;
+  if (target === tileIdx) return;
+  const stack = [{q:sq,r:sr}];
+  const visited = new Set();
+  let n = 0;
+  while (stack.length && n < MAX) {
+    const {q,r} = stack.pop();
+    const key = hk(q,r);
+    if (visited.has(key)) continue;
+    visited.add(key);
+    if ((map[key] ?? -1) !== target) continue;
+    map[key] = randomPalette ? Math.floor(Math.random() * pal.length) : tileIdx;
+    rotMap[key] = randomRotate ? Math.floor(Math.random() * 6) * (Math.PI / 3) : 0;
+    flipMap[key] = randomFlip ? Math.random() < 0.5 : false;
+    n++;
+    for (const nb of hexNeighbors(q,r)) stack.push(nb);
+  }
+}
+
+canvas.addEventListener('mousedown', e => {
+  if (e.button === 1 || (e.button === 0 && (spaceHeld || e.shiftKey))) {
+    isPanning = true;
+    panLast = { x: e.clientX, y: e.clientY };
+    canvas.classList.add('panning');
+    e.preventDefault();
+    return;
+  }
+  if (e.button === 2) { // right-click erase
+    const w = screenToWorld(e.clientX, e.clientY);
+    const h = pixelToHex(w.x, w.y);
+    for (const bh of getHexesInBrush(h.q, h.r)) delete map[hk(bh.q, bh.r)];
+    isDrawing = 'erase';
+    scheduleRender();
+    return;
+  }
+  if (e.button === 0) {
+    isDrawing = true;
+    heightEdited.clear();
+    updateHover(e);
+    applyTool(hover);
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  if (isPanning) {
+    const dx = e.clientX - panLast.x, dy = e.clientY - panLast.y;
+    cam.x -= dx / cam.zoom;
+    cam.y -= dy / cam.zoom;
+    panLast = { x: e.clientX, y: e.clientY };
+    scheduleRender();
+    return;
+  }
+  updateHover(e);
+  if (isDrawing === true) applyTool(hover);
+  else if (isDrawing === 'erase' && hover) { for (const bh of getHexesInBrush(hover.q, hover.r)) { const k = hk(bh.q, bh.r); delete map[k]; delete rotMap[k]; delete flipMap[k]; delete heightMap[k]; } scheduleRender(); }
+});
+
+canvas.addEventListener('mouseup', () => {
+  isDrawing = false;
+  isPanning = false;
+  canvas.classList.remove('panning');
+});
+
+canvas.addEventListener('mouseleave', () => {
+  hover = null;
+  isDrawing = false;
+  isPanning = false;
+  canvas.classList.remove('panning');
+  scheduleRender();
+});
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const cc = canvasCoords(e);
+  const wxBefore = (cc.x - canvas.width/2) / cam.zoom + cam.x;
+  const wyBefore = (cc.y - canvas.height/2) / cam.zoom + cam.y;
+  const factor = e.deltaY > 0 ? 0.9 : 1.1;
+  cam.zoom = Math.max(0.3, Math.min(30, cam.zoom * factor));
+  cam.x = wxBefore - (cc.x - canvas.width/2) / cam.zoom;
+  cam.y = wyBefore - (cc.y - canvas.height/2) / cam.zoom;
+  document.getElementById('zoom-display').textContent = cam.zoom.toFixed(1) + 'x';
+  scheduleRender();
+}, { passive: false });
+
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space') { spaceHeld = true; e.preventDefault(); }
+  if (e.key === '1') setTool('paint');
+  if (e.key === '2') setTool('erase');
+  if (e.key === '3') setTool('fill');
+  if (e.key === '4') setTool('pick');
+  if (e.key === '[') { brushSize = Math.max(1, brushSize - 1); document.getElementById('brush-size').value = brushSize; updateBrushPreview(); scheduleRender(); }
+  if (e.key === ']') { brushSize = Math.min(8, brushSize + 1); document.getElementById('brush-size').value = brushSize; updateBrushPreview(); scheduleRender(); }
+});
+document.addEventListener('keyup', e => {
+  if (e.code === 'Space') spaceHeld = false;
+});
+
+// ═══════════════════════════════════════════
+// TOOLS UI
+// ═══════════════════════════════════════════
+function setTool(t) {
+  tool = t;
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
+}
+document.querySelectorAll('.tool-btn').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
+
+// Brush settings
+function updateBrushPreview() {
+  const rad = brushSize - 1;
+  let count;
+  if (brushShape === 'ring' && rad > 0) count = 6 * rad;
+  else if (brushShape === 'random') count = '~' + Math.round(0.4 * (3*rad*rad + 3*rad + 1));
+  else count = 3*rad*rad + 3*rad + 1;
+  document.getElementById('brush-preview').textContent =
+    `${count} hex${count === 1 ? '' : 'es'}` + (brushShape !== 'hex' ? ` (${brushShape})` : '');
+}
+document.getElementById('brush-size').addEventListener('input', e => {
+  brushSize = Math.max(1, Math.min(256, parseInt(e.target.value) || 1));
+  updateBrushPreview(); scheduleRender();
+});
+document.getElementById('brush-presets').addEventListener('click', e => {
+  const val = e.target.dataset.bs;
+  if (!val) return;
+  brushSize = parseInt(val);
+  document.getElementById('brush-size').value = brushSize;
+  updateBrushPreview(); scheduleRender();
+});
+document.getElementById('brush-shape').addEventListener('change', e => {
+  brushShape = e.target.value;
+  updateBrushPreview(); scheduleRender();
+});
+
+// ═══════════════════════════════════════════
+// PALETTE
+// ═══════════════════════════════════════════
+function addTile(name, img, dataUrl) {
+  const id = palIdCounter++;
+  if (!dataUrl) {
+    const c = document.createElement('canvas');
+    c.width = img.width; c.height = img.height;
+    c.getContext('2d').drawImage(img, 0, 0);
+    dataUrl = c.toDataURL();
+  }
+  pal.push({ id, name, img, dataUrl });
+  if (selTile < 0) selTile = pal.length - 1;
+  renderPalette();
+}
+
+function removeTile(idx) {
+  pal.splice(idx, 1);
+  // Fix map references
+  const newMap = {};
+  for (const [key, val] of Object.entries(map)) {
+    if (val === idx) continue;
+    newMap[key] = val > idx ? val - 1 : val;
+  }
+  map = newMap;
+  if (selTile >= pal.length) selTile = pal.length - 1;
+  renderPalette();
+  scheduleRender();
+}
+
+function renderPalette() {
+  const el = document.getElementById('palette');
+  el.innerHTML = '';
+  pal.forEach((tile, i) => {
+    const div = document.createElement('div');
+    div.className = 'pal-tile' + (i === selTile ? ' selected' : '');
+    div.title = tile.name;
+    const img = document.createElement('img');
+    img.src = tile.dataUrl;
+    div.appendChild(img);
+    const del = document.createElement('div');
+    del.className = 'del';
+    del.textContent = 'x';
+    del.onclick = e => { e.stopPropagation(); removeTile(i); };
+    div.appendChild(del);
+    div.onclick = () => { selTile = i; setTool('paint'); renderPalette(); };
+    el.appendChild(div);
+  });
+}
+
+document.getElementById('upload-btn').addEventListener('click', () => {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
+  inp.onchange = () => {
+    for (const file of inp.files) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => addTile(file.name.replace(/\.\w+$/, ''), img, reader.result);
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  inp.click();
+});
+
+document.getElementById('upload-sheet').addEventListener('click', () => {
+  const cols = parseInt(document.getElementById('sheet-cols').value) || 1;
+  const rows = parseInt(document.getElementById('sheet-rows').value) || 1;
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*';
+  inp.onchange = () => {
+    const file = inp.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const tiles = splitSheet(img, cols, rows);
+        const name = file.name.replace(/\.\w+$/, '');
+        for (let i = 0; i < tiles.length; i++) {
+          addTile(`${name}_${i}`, tiles[i].img, tiles[i].dataUrl);
+        }
+        scheduleRender();
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  };
+  inp.click();
+});
+
+document.getElementById('clear-pal').addEventListener('click', () => {
+  if (!confirm('Clear all palette tiles?')) return;
+  pal = []; selTile = -1; map = {};
+  renderPalette(); scheduleRender();
+});
+
+// ═══════════════════════════════════════════
+// PIXELLAB GENERATE
+// ═══════════════════════════════════════════
+function loadImg(src) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = rej;
+    img.src = src;
+  });
+}
+
+// Auto-split for PixelLab responses: detect columns from tileW, assume 1 row
+function autoSplitSheet(img, tileW) {
+  const cols = Math.max(1, Math.round(img.width / tileW));
+  return splitSheet(img, cols, 1);
+}
+
+function splitSheet(img, cols, rows) {
+  if (cols <= 1 && rows <= 1) return [{ img, dataUrl: null }];
+  const tileW = Math.round(img.width / cols);
+  const tileH = Math.round(img.height / rows);
+  const out = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const cv = document.createElement('canvas');
+      cv.width = tileW; cv.height = tileH;
+      const cx = cv.getContext('2d');
+      cx.drawImage(img, c * tileW, r * tileH, tileW, tileH, 0, 0, tileW, tileH);
+      out.push({ img: cv, dataUrl: cv.toDataURL() });
+    }
+  }
+  return out;
+}
+
+document.getElementById('gen-btn').addEventListener('click', async () => {
+  const desc = document.getElementById('gen-desc').value.trim();
+  if (!desc) return;
+  const nTiles = parseInt(document.getElementById('gen-count').value) || 4;
+  const tileSize = parseInt(document.getElementById('gen-size').value) || 32;
+  const angle = parseInt(document.getElementById('gen-angle').value) ?? 70;
+  const depthPct = parseInt(document.getElementById('gen-depth').value) ?? 100;
+  const btn = document.getElementById('gen-btn');
+  const status = document.getElementById('gen-status');
+
+  btn.disabled = true; btn.textContent = 'Generating...';
+  status.textContent = 'Sending request...';
+
+  const body = {
+    description: desc,
+    tile_type: 'hex',
+    tile_size: tileSize,
+    tile_view_angle: angle,
+    n_tiles: nTiles
+  };
+  if (depthPct < 100) body.tile_depth_ratio = depthPct / 100;
+
+  try {
+    const resp = await fetch('/api/pixellab/create-tiles-pro', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    const ct = resp.headers.get('content-type') || '';
+
+    if (ct.includes('image/')) {
+      // Direct binary image (spritesheet)
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const img = await loadImg(url);
+      URL.revokeObjectURL(url);
+      const tiles = autoSplitSheet(img, tileSize);
+      for (let i = 0; i < tiles.length; i++) {
+        addTile(`${desc.slice(0,20)}_${i}`, tiles[i].img, tiles[i].dataUrl);
+      }
+      hexR = tileSize / 2;
+        viewAngle = parseInt(document.getElementById('gen-angle').value) || 70;
+        yScale = Math.sin(viewAngle * Math.PI / 180);
+      status.textContent = `Added ${tiles.length} tile(s)`;
+    } else {
+      const data = await resp.json();
+      if (!resp.ok) {
+        status.textContent = data.error || `Error ${resp.status}`;
+        console.error('PixelLab error:', data);
+      } else if (data.image) {
+        // Single base64 image
+        const img = await loadImg(`data:image/png;base64,${data.image}`);
+        const tiles = autoSplitSheet(img, tileSize);
+        for (let i = 0; i < tiles.length; i++) addTile(`${desc.slice(0,20)}_${i}`, tiles[i].img, tiles[i].dataUrl);
+        hexR = tileSize / 2;
+        viewAngle = parseInt(document.getElementById('gen-angle').value) || 70;
+        yScale = Math.sin(viewAngle * Math.PI / 180);
+        status.textContent = `Added ${tiles.length} tile(s)`;
+      } else if (data.images) {
+        // Array of base64 images
+        for (let i = 0; i < data.images.length; i++) {
+          const img = await loadImg(`data:image/png;base64,${data.images[i]}`);
+          addTile(`${desc.slice(0,20)}_${i}`, img);
+        }
+        hexR = tileSize / 2;
+        viewAngle = parseInt(document.getElementById('gen-angle').value) || 70;
+        yScale = Math.sin(viewAngle * Math.PI / 180);
+        status.textContent = `Added ${data.images.length} tile(s)`;
+      } else if (data.task_id || data.id) {
+        // Async — poll
+        status.textContent = 'Generating... (polling)';
+        const taskId = data.task_id || data.id;
+        await pollResult(taskId, desc, tileSize, status);
+      } else {
+        status.textContent = 'Unknown response format';
+        console.log('PixelLab response:', data);
+      }
+    }
+  } catch (err) {
+    status.textContent = 'Failed: ' + err.message;
+    console.error(err);
+  }
+
+  btn.disabled = false; btn.textContent = 'Generate';
+  scheduleRender();
+});
+
+async function pollResult(taskId, desc, tileSize, statusEl) {
+  for (let i = 0; i < 30; i++) {
+    await new Promise(r => setTimeout(r, 2000));
+    statusEl.textContent = `Polling... (${i+1}/30)`;
+    try {
+      // Try common polling endpoints
+      for (const path of [`tiles-pro/${taskId}`, `tasks/${taskId}`]) {
+        const r = await fetch(`/api/pixellab/${path}`);
+        if (!r.ok) continue;
+        const ct = r.headers.get('content-type') || '';
+        if (ct.includes('image/')) {
+          const blob = await r.blob();
+          const url = URL.createObjectURL(blob);
+          const img = await loadImg(url);
+          URL.revokeObjectURL(url);
+          const tiles = autoSplitSheet(img, tileSize);
+          for (let j = 0; j < tiles.length; j++) addTile(`${desc.slice(0,20)}_${j}`, tiles[j].img, tiles[j].dataUrl);
+          hexR = tileSize / 2;
+        viewAngle = parseInt(document.getElementById('gen-angle').value) || 70;
+        yScale = Math.sin(viewAngle * Math.PI / 180);
+          statusEl.textContent = `Added ${tiles.length} tile(s)`;
+          return;
+        }
+        const data = await r.json();
+        if (data.status === 'completed' && (data.image || data.images)) {
+          if (data.images) {
+            for (let j = 0; j < data.images.length; j++) {
+              const img = await loadImg(`data:image/png;base64,${data.images[j]}`);
+              addTile(`${desc.slice(0,20)}_${j}`, img);
+            }
+          } else {
+            const img = await loadImg(`data:image/png;base64,${data.image}`);
+            const tiles = autoSplitSheet(img, tileSize);
+            for (let j = 0; j < tiles.length; j++) addTile(`${desc.slice(0,20)}_${j}`, tiles[j].img, tiles[j].dataUrl);
+          }
+          hexR = tileSize / 2;
+        viewAngle = parseInt(document.getElementById('gen-angle').value) || 70;
+        yScale = Math.sin(viewAngle * Math.PI / 180);
+          statusEl.textContent = 'Done!';
+          return;
+        }
+      }
+    } catch (_) {}
+  }
+  statusEl.textContent = 'Timed out. Try again.';
+}
+
+// ═══════════════════════════════════════════
+// EXPORT / IMPORT
+// ═══════════════════════════════════════════
+document.getElementById('export-png').addEventListener('click', () => {
+  const keys = Object.keys(map);
+  if (!keys.length) return alert('Map is empty');
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const key of keys) {
+    const [q,r] = key.split(',').map(Number);
+    const p = hexToPixel(q, r);
+    const tile = pal[map[key]]; if (!tile?.img) continue;
+    const w = tile.img.width, topH = w * S3/2, h = tile.img.height;
+    if (clipHex) {
+      const faceH = Math.round(w * S3/2 * yScale);
+      minX = Math.min(minX, p.x - w/2); minY = Math.min(minY, p.y - faceH/2);
+      maxX = Math.max(maxX, p.x + w/2); maxY = Math.max(maxY, p.y + faceH/2);
+    } else {
+      const faceHE = Math.round(topH * yScale);
+      const cosA = Math.cos(viewAngle * Math.PI / 180);
+      const totalThickness = h - topH;
+      const visibleThickness = totalThickness * cosA;
+      const drawH = Math.round(faceHE + visibleThickness * yScale);
+      const dx = p.x - w/2, dy = p.y - faceHE/2 + yOff;
+      minX = Math.min(minX, dx); minY = Math.min(minY, dy);
+      maxX = Math.max(maxX, dx + w); maxY = Math.max(maxY, dy + drawH);
+    }
+  }
+
+  const pad = 2;
+  const oc = document.createElement('canvas');
+  oc.width = Math.ceil(maxX - minX) + pad*2;
+  oc.height = Math.ceil(maxY - minY) + pad*2;
+  const ox = oc.getContext('2d');
+  ox.imageSmoothingEnabled = false;
+
+  const sorted = keys.map(k => { const [q,r] = k.split(',').map(Number); return {q,r,key:k}; })
+    .sort((a,b) => { const pa=hexToPixel(a.q,a.r), pb=hexToPixel(b.q,b.r); return (pa.y-pb.y)||(pa.x-pb.x); });
+
+  // drawHexPath helper for export canvas (uses yScale)
+  function drawHexPathOx(cx, cy, r) {
+    ox.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = Math.PI/3 * i;
+      const x = cx + r * Math.cos(a), y = cy + r * Math.sin(a) * yScale;
+      i === 0 ? ox.moveTo(x,y) : ox.lineTo(x,y);
+    }
+    ox.closePath();
+  }
+
+  for (const h of sorted) {
+    const tile = pal[map[h.key]]; if (!tile?.img) continue;
+    const p = hexToPixel(h.q, h.r);
+    const w = tile.img.width;
+    const cx = p.x - minX + pad, cy = p.y - minY + pad;
+    if (clipHex) {
+      const faceH = Math.round(w * S3/2 * yScale);
+      ox.save();
+      drawHexPathOx(cx, cy, hexR);
+      ox.clip();
+      ox.drawImage(tile.img, 0, 0, w, faceH, cx - w/2, cy - faceH/2, w, faceH);
+      ox.restore();
+    } else {
+      const topH = w * S3/2;
+      const faceH2 = Math.round(topH * yScale);
+      const cosA = Math.cos(viewAngle * Math.PI / 180);
+      const totalThickness = tile.img.height - topH;
+      const visibleThickness = totalThickness * cosA;
+      const srcH = Math.round(topH + totalThickness);
+      const drawH = Math.round(faceH2 + visibleThickness * yScale);
+      ox.drawImage(tile.img, 0, 0, w, srcH,
+        cx - w/2, cy - faceH2/2 + yOff, w, drawH);
+    }
+  }
+
+  const a = document.createElement('a');
+  a.download = 'hex-map.png'; a.href = oc.toDataURL('image/png'); a.click();
+});
+
+document.getElementById('save-map').addEventListener('click', async () => {
+  const name = document.getElementById('map-name').value.trim();
+  if (!name) { document.getElementById('save-status').textContent = 'Enter a map name'; return; }
+  const statusEl = document.getElementById('save-status');
+  statusEl.textContent = 'Saving...';
+  const data = {
+    hexR,
+    viewAngle,
+    yOff,
+    clipHex,
+    clipZoom,
+    palette: pal.map(t => ({ id: t.id, name: t.name, dataUrl: t.dataUrl })),
+    map,
+    rotMap,
+    flipMap,
+    heightMap,
+  };
+  try {
+    const res = await fetch('/api/game/map', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, data })
+    });
+    const result = await res.json();
+    if (result.ok) {
+      statusEl.textContent = `Saved as "${result.mapId}"`;
+      statusEl.style.color = '#6ee7b7';
+    } else {
+      statusEl.textContent = result.error || 'Save failed';
+      statusEl.style.color = '#e74c3c';
+    }
+  } catch (err) {
+    statusEl.textContent = 'Server error: ' + err.message;
+    statusEl.style.color = '#e74c3c';
+  }
+});
+
+document.getElementById('export-json').addEventListener('click', () => {
+  const data = {
+    hexR,
+    yOff,
+    palette: pal.map(t => ({ id: t.id, name: t.name, dataUrl: t.dataUrl })),
+    map,
+    rotMap,
+    flipMap,
+    heightMap,
+    selectedTile: selTile
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.download = 'hex-map.json'; a.href = URL.createObjectURL(blob); a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+document.getElementById('import-json').addEventListener('click', () => {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.json';
+  inp.onchange = async () => {
+    try {
+      const text = await inp.files[0].text();
+      const data = JSON.parse(text);
+      hexR = data.hexR || 16;
+      yOff = data.yOff || 0;
+      document.getElementById('y-offset').value = yOff;
+      map = data.map || {};
+      rotMap = data.rotMap || {};
+      flipMap = data.flipMap || {};
+      heightMap = data.heightMap || {};
+      selTile = data.selectedTile ?? -1;
+      pal = [];
+      for (const t of (data.palette || [])) {
+        const img = await loadImg(t.dataUrl);
+        pal.push({ id: t.id, name: t.name, img, dataUrl: t.dataUrl });
+      }
+      palIdCounter = pal.reduce((mx, t) => Math.max(mx, t.id + 1), 0);
+      renderPalette();
+      scheduleRender();
+    } catch (err) {
+      alert('Import failed: ' + err.message);
+    }
+  };
+  inp.click();
+});
+
+document.getElementById('clear-map').addEventListener('click', () => {
+  if (!confirm('Clear all painted hexes?')) return;
+  map = {};
+  scheduleRender();
+});
+
+// ═══════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════
+document.getElementById('show-grid').addEventListener('change', e => { showGrid = e.target.checked; scheduleRender(); });
+document.getElementById('show-coords').addEventListener('change', e => { showCoords = e.target.checked; scheduleRender(); });
+document.getElementById('clip-hex').addEventListener('change', e => {
+  clipHex = e.target.checked;
+  scheduleRender();
+});
+document.getElementById('clip-zoom').addEventListener('input', e => {
+  clipZoom = parseInt(e.target.value) || 0;
+  document.getElementById('clip-zoom-val').textContent = clipZoom + '%';
+  scheduleRender();
+});
+document.getElementById('random-rotate').addEventListener('change', e => {
+  randomRotate = e.target.checked;
+});
+document.getElementById('random-flip').addEventListener('change', e => {
+  randomFlip = e.target.checked;
+});
+document.getElementById('random-palette').addEventListener('change', e => {
+  randomPalette = e.target.checked;
+});
+document.getElementById('random-brush').addEventListener('change', e => {
+  randomBrush = e.target.checked;
+});
+document.getElementById('y-offset').addEventListener('input', e => { yOff = parseInt(e.target.value) || 0; scheduleRender(); });
+
+// Regen Flat — regenerate palette tiles via PixelLab with depth=0
+document.getElementById('regen-flat').addEventListener('click', async () => {
+  if (!pal.length) return alert('Palette is empty — nothing to regenerate');
+  const btn = document.getElementById('regen-flat');
+  const status = document.getElementById('gen-status');
+  btn.disabled = true; btn.textContent = 'Regenerating...';
+
+  const tileSize = parseInt(document.getElementById('gen-size').value) || 32;
+  const angle = parseInt(document.getElementById('gen-angle').value) ?? 70;
+  let added = 0;
+
+  for (let i = 0; i < pal.length; i++) {
+    status.textContent = `Flat regen ${i+1}/${pal.length}...`;
+    try {
+      // Send each tile's dataUrl as reference, request depth=0
+      const body = {
+        description: pal[i].name + ' (flat, no thickness)',
+        tile_type: 'hex',
+        tile_size: tileSize,
+        tile_view_angle: angle,
+        n_tiles: 1,
+        tile_depth_ratio: 0,
+        reference_image: pal[i].dataUrl.replace(/^data:image\/\w+;base64,/, '')
+      };
+      const resp = await fetch('/api/pixellab/create-tiles-pro', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const ct = resp.headers.get('content-type') || '';
+      if (ct.includes('image/')) {
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const img = await loadImg(url);
+        URL.revokeObjectURL(url);
+        addTile(pal[i].name + '_flat', img);
+        added++;
+      } else {
+        const data = await resp.json();
+        if (data.image) {
+          const img = await loadImg(`data:image/png;base64,${data.image}`);
+          addTile(pal[i].name + '_flat', img);
+          added++;
+        } else if (data.images?.length) {
+          const img = await loadImg(`data:image/png;base64,${data.images[0]}`);
+          addTile(pal[i].name + '_flat', img);
+          added++;
+        }
+      }
+    } catch (err) {
+      console.error(`Regen flat failed for tile ${i}:`, err);
+    }
+  }
+
+  status.textContent = `Added ${added} flat tile(s)`;
+  btn.disabled = false; btn.textContent = 'Regen Flat (depth=0)';
+  scheduleRender();
+});
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+function resizeCanvas() {
+  const area = document.getElementById('canvas-area');
+  canvas.width = area.clientWidth;
+  canvas.height = area.clientHeight;
+  scheduleRender();
+}
+
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+renderPalette();
+
+// ═══════════════════════════════════════════
+// BLOCK VISUALIZER
+// ═══════════════════════════════════════════
+(function() {
+  const overlay = document.getElementById('block-viz-overlay');
+  const vc = document.getElementById('block-viz-canvas');
+  const vx = vc.getContext('2d');
+  const info = document.getElementById('block-viz-info');
+
+  function resizeVizCanvas() {
+    const panel = document.getElementById('block-viz-panel');
+    const header = panel.querySelector('.viz-header');
+    const controls = panel.querySelector('.viz-controls');
+    const hH = header.offsetHeight + 12;
+    const cH = controls.offsetHeight + 12;
+    const availH = window.innerHeight - 32 - hH - cH - 24;
+    const availW = window.innerWidth - 48 - 280 - 24; // padding + info panel + gap
+    const w = Math.max(300, availW);
+    const h = Math.max(200, availH);
+    vc.width = w;
+    vc.height = h;
+    vc.style.width = w + 'px';
+    vc.style.height = h + 'px';
+  }
+
+  document.getElementById('block-viz-btn').addEventListener('click', () => {
+    overlay.classList.add('open');
+    document.getElementById('viz-size').value = document.getElementById('gen-size').value;
+    document.getElementById('viz-angle').value = document.getElementById('gen-angle').value;
+    document.getElementById('viz-depth').value = document.getElementById('gen-depth').value;
+    requestAnimationFrame(() => { resizeVizCanvas(); drawViz(); });
+  });
+  document.getElementById('block-viz-close').addEventListener('click', () => overlay.classList.remove('open'));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && overlay.classList.contains('open')) overlay.classList.remove('open'); });
+
+  document.getElementById('viz-size').addEventListener('input', drawViz);
+  document.getElementById('viz-angle').addEventListener('input', drawViz);
+  document.getElementById('viz-depth').addEventListener('input', drawViz);
+  window.addEventListener('resize', () => { if (overlay.classList.contains('open')) { resizeVizCanvas(); drawViz(); } });
+
+  function drawViz() {
+    const tileSize = parseInt(document.getElementById('viz-size').value) || 32;
+    const angle = parseInt(document.getElementById('viz-angle').value) || 70;
+    const depthPct = parseInt(document.getElementById('viz-depth').value) ?? 100;
+
+    // Update slider labels
+    document.getElementById('viz-size-val').textContent = tileSize;
+    document.getElementById('viz-angle-val').textContent = angle + '°';
+    document.getElementById('viz-depth-val').textContent = depthPct;
+    const S3 = Math.sqrt(3);
+    const rad = angle * Math.PI / 180;
+    const sinA = Math.sin(rad);
+
+    // Core geometry:
+    // Tile bounding box = tileSize × tileSize (ALWAYS constant)
+    // Width = 2R → R = tileSize / 2
+    const R = tileSize / 2;
+    // Projected face height at this angle = R × √3 × sin(angle)
+    const projFaceH = R * S3 * sinA;
+    // Max thickness at this angle
+    const maxThickness = tileSize - projFaceH;
+    // Depth slider sets thickness; face at geometric size unless depth > 100% forces compression
+    const rawThickness = maxThickness * (depthPct / 100);
+    let faceH, thickness;
+    if (rawThickness <= maxThickness) {
+      // depth ≤ 100%: face stays at projected size, angle-responsive
+      faceH = projFaceH;
+      thickness = rawThickness;
+    } else {
+      // depth > 100%: face compresses to keep total ≤ tileSize
+      thickness = Math.min(tileSize, rawThickness);
+      faceH = tileSize - thickness;
+    }
+    const totalH = tileSize;
+
+    // Drawing scale to fit canvas
+    const W = vc.width, H = vc.height;
+    const margin = 40;
+    const scale = Math.min((W - margin * 2) / tileSize, (H - margin * 2) / totalH, 6);
+    const ox = W / 2;  // center x
+    const oy = margin + 10; // top
+
+    vx.clearRect(0, 0, W, H);
+
+    // Hex face vertices — vertical scale derived from faceH, not sinA
+    // so face compresses into available space as depth increases
+    const faceScale = faceH / (R * S3); // replaces sinA for vertex positioning
+    const fv = [];
+    for (let i = 0; i < 6; i++) {
+      const a = Math.PI / 3 * i;
+      fv.push({
+        x: ox + R * scale * Math.cos(a),
+        y: oy + (faceH / 2) * scale + R * scale * Math.sin(a) * faceScale
+      });
+    }
+
+    // Draw thickness walls (bottom 3 edges: 0→1, 1→2, 2→3)
+    const th = thickness * scale;
+    if (th > 0.5) {
+      for (let i = 0; i < 3; i++) {
+        const v1 = fv[i], v2 = fv[(i + 1) % 6];
+        if (v1.y >= oy + (faceH / 2) * scale - 1 || v2.y >= oy + (faceH / 2) * scale - 1) {
+          const shade = i === 1 ? '#4a6a3a' : (i === 0 ? '#5a7a4a' : '#3a5a2a');
+          vx.fillStyle = shade;
+          vx.beginPath();
+          vx.moveTo(v1.x, v1.y); vx.lineTo(v2.x, v2.y);
+          vx.lineTo(v2.x, v2.y + th); vx.lineTo(v1.x, v1.y + th);
+          vx.closePath(); vx.fill();
+          vx.strokeStyle = '#2a3a1a'; vx.lineWidth = 1; vx.stroke();
+        }
+      }
+    }
+
+    // Draw top face
+    vx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      i === 0 ? vx.moveTo(fv[i].x, fv[i].y) : vx.lineTo(fv[i].x, fv[i].y);
+    }
+    vx.closePath();
+    vx.fillStyle = '#6aad4a';
+    vx.fill();
+    vx.strokeStyle = '#3a6a2a';
+    vx.lineWidth = 1.5;
+    vx.stroke();
+
+    // ── Dimension lines ──
+    vx.strokeStyle = '#6ee7b7';
+    vx.fillStyle = '#6ee7b7';
+    vx.lineWidth = 1;
+    vx.font = '11px monospace';
+    vx.textAlign = 'center';
+
+    const dxR = ox + R * scale + 20; // right side for vertical dims
+    const topFace = fv[4].y; // top of face (vertex 4 or 5)
+    const botFace = fv[1].y; // bottom of face
+    const botTile = botFace + th; // bottom of tile
+
+    // Face height arrow (right side)
+    drawDimLine(vx, dxR, topFace, dxR, botFace, `face: ${faceH.toFixed(1)}px`, 12);
+    // Thickness arrow (right side)
+    if (th > 5) {
+      drawDimLine(vx, dxR, botFace, dxR, botTile, `depth: ${thickness.toFixed(1)}px`, 12);
+    }
+    // Total height (far right)
+    vx.strokeStyle = '#aaa'; vx.fillStyle = '#aaa';
+    drawDimLine(vx, dxR + 35, topFace, dxR + 35, botTile, `total: ${totalH.toFixed(1)}px`, 12);
+
+    // Width (bottom)
+    const leftX = fv[3].x; // leftmost
+    const rightX = fv[0].x; // rightmost
+    vx.strokeStyle = '#6ee7b7'; vx.fillStyle = '#6ee7b7';
+    drawDimLine(vx, leftX, botTile + 15, rightX, botTile + 15, `width: ${tileSize}px (2R)`, 0, true);
+
+    // Tile bounding box (dashed)
+    vx.setLineDash([3, 3]);
+    vx.strokeStyle = 'rgba(255,255,100,0.3)';
+    vx.strokeRect(ox - R * scale, topFace - 2, tileSize * scale, totalH * scale + 4);
+    vx.setLineDash([]);
+
+    // ── Info panel ──
+    info.innerHTML = `
+      <b>Tile Size:</b> ${tileSize}px (square bounding box)<br>
+      <b>Circumradius R:</b> ${R.toFixed(1)}px (width/2)<br>
+      <b>View Angle:</b> ${angle}° → sin(${angle}°) = ${sinA.toFixed(4)}<br>
+      <br>
+      <b>Projected Face:</b> R×√3×sin(θ) = ${projFaceH.toFixed(2)}px<br>
+      <b>Max Thickness:</b> ${tileSize} - ${projFaceH.toFixed(1)} = ${maxThickness.toFixed(2)}px<br>
+      <b>Actual Thickness:</b> ${maxThickness.toFixed(1)} × ${depthPct}% = ${thickness.toFixed(2)}px<br>
+      <b>Actual Face:</b> ${tileSize} - ${thickness.toFixed(1)} = ${faceH.toFixed(2)}px<br>
+      <b>Total Height:</b> ${totalH}px (always = tileSize)<br>
+      <br>
+      <b>Grid hexR:</b> ${R.toFixed(1)}<br>
+      <b>Grid yScale:</b> ${sinA.toFixed(4)}<br>
+      <b>Row spacing:</b> ${(R * S3 * sinA).toFixed(2)}px<br>
+      <b>Col spacing:</b> ${(R * 1.5).toFixed(2)}px<br>
+      <br>
+      <b>Source crop rows:</b> 0 → ${Math.round(faceH)} (face only)<br>
+      <b>Thickness rows:</b> ${Math.round(faceH)} → ${Math.round(totalH)}
+    `;
+  }
+
+  function drawDimLine(ctx, x1, y1, x2, y2, label, labelOff, horiz) {
+    const tickSize = 4;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+    if (horiz) {
+      ctx.moveTo(x1, y1 - tickSize); ctx.lineTo(x1, y1 + tickSize);
+      ctx.moveTo(x2, y2 - tickSize); ctx.lineTo(x2, y2 + tickSize);
+    } else {
+      ctx.moveTo(x1 - tickSize, y1); ctx.lineTo(x1 + tickSize, y1);
+      ctx.moveTo(x2 - tickSize, y2); ctx.lineTo(x2 + tickSize, y2);
+    }
+    ctx.stroke();
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    if (horiz) {
+      ctx.fillText(label, mx, my - 6);
+    } else {
+      ctx.save();
+      ctx.translate(mx + labelOff, my);
+      ctx.fillText(label, 0, 4);
+      ctx.restore();
+    }
+  }
+})();
+</script>
+</body>
+</html>

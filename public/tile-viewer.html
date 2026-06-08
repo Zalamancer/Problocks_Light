@@ -230,6 +230,37 @@
     }
     objSection.appendChild(objGrid);
     content.appendChild(objSection);
+
+    // --- Reference Comparison ---
+    const refSection = document.createElement('div');
+    refSection.innerHTML = '<h2>Reference Comparison</h2>';
+    const refGrid = document.createElement('div');
+    refGrid.className = 'grid';
+    refGrid.style.gap = '24px';
+
+    const refs = [
+      { file: '/reference/stardew-reference.png', label: 'Target: Stardew Valley' },
+      { file: '/reference/problocks-current.png', label: 'Current: Problocks Light' },
+    ];
+    for (const ref of refs) {
+      const card = document.createElement('div');
+      card.className = 'tileset-card';
+      card.style.maxWidth = '600px';
+      const lbl = document.createElement('div');
+      lbl.className = 'label';
+      lbl.textContent = ref.label;
+      card.appendChild(lbl);
+      const img = document.createElement('img');
+      img.src = ref.file;
+      img.style.width = '100%';
+      img.style.imageRendering = 'pixelated';
+      img.style.borderRadius = '4px';
+      img.style.marginTop = '8px';
+      card.appendChild(img);
+      refGrid.appendChild(card);
+    }
+    refSection.appendChild(refGrid);
+    content.appendChild(refSection);
   </script>
 </body>
 </html>
